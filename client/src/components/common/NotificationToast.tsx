@@ -19,17 +19,36 @@ export function NotificationToast() {
     <AnimatePresence>
       {notification && (
         <motion.div
-          initial={{ opacity: 0, y: 50, x: '-50%' }}
-          animate={{ opacity: 1, y: 0, x: '-50%' }}
-          exit={{ opacity: 0, y: 20, x: '-50%' }}
-          className={`fixed bottom-10 left-1/2 z-[1000] px-6 py-3 rounded-2xl border shadow-2xl flex items-center gap-3 min-w-[300px] ${
-            notification.type === 'success' 
-              ? 'bg-primary/90 text-surface border-primary' 
-              : 'bg-red-500/90 text-white border-red-400'
-          }`}
+          initial={{ opacity: 0, y: -10, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -6, scale: 0.98 }}
+          className="fixed top-[92px] right-6 z-[1000] w-[320px] max-w-[calc(100vw-48px)]"
         >
-          <span className="text-xl">{notification.type === 'success' ? '✅' : '❌'}</span>
-          <span className="font-bold text-sm tracking-tight">{notification.message}</span>
+          <div
+            className={`relative overflow-hidden rounded-2xl border shadow-2xl backdrop-blur-md ${
+              notification.type === 'success'
+                ? 'bg-primary/10 border-primary/20'
+                : 'bg-red-500/10 border-red-500/20'
+            }`}
+          >
+            <div
+              className={`absolute left-0 top-0 bottom-0 w-1 ${
+                notification.type === 'success' ? 'bg-primary' : 'bg-red-500'
+              }`}
+            />
+            <div className="px-4 py-3 flex items-start gap-3">
+              <div
+                className={`mt-0.5 w-2 h-2 rounded-full ${
+                  notification.type === 'success' ? 'bg-primary' : 'bg-red-500'
+                }`}
+              />
+              <div className="min-w-0">
+                <div className="text-white text-[11px] font-semibold leading-relaxed tracking-tight">
+                  {notification.message}
+                </div>
+              </div>
+            </div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

@@ -61,6 +61,15 @@ export function ProfilePage() {
   const user = useStore((s) => s.user)
   const bookings = useStore((s) => s.bookings)
   const orders = useStore((s) => s.orders)
+  const updateMe = useStore((s) => s.updateMe)
+  const isLoading = useStore((s) => s.isLoading)
+  const setNotification = useStore((s) => s.setNotification)
+
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined)
+  const [errors, setErrors] = useState<{ name?: string; phone?: string }>({})
+  const normalizePhone = (v: string) => v.replace(/[^\d]/g, '')
 
   if (!user) {
     return (
@@ -70,8 +79,14 @@ export function ProfilePage() {
     )
   }
 
+  useEffect(() => {
+    setName(user.name || '')
+    setPhone(user.phone || '')
+    setAvatarUrl(user.avatarUrl)
+  }, [user])
+
   const myBookings = bookings.filter(b => b.phone === user.phone || b.fullName === user.name)
-  const myOrders = orders.filter(o => o.phone === user.phone || o.fullName === user.name)
+  const myOrders = orders.filter(o => o.guestPhone === user.phone || o.guestName === user.name)
 
   return (
     <motion.div 
@@ -85,10 +100,16 @@ export function ProfilePage() {
           <div className="glass p-10 rounded-[40px] border-white/5 text-center relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-primary/20 to-transparent" />
             <div className="relative z-10">
-              <div className="w-24 h-24 rounded-3xl bg-primary mx-auto mb-6 flex items-center justify-center text-surface text-4xl font-black italic shadow-lg shadow-primary-glow">
-                {user.name[0]}
+              <div className="w-24 h-24 rounded-3xl bg-primary/15 border border-primary/20 mx-auto mb-6 flex items-center justify-center overflow-hidden">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="text-primary text-4xl font-black italic">
+                    {(user.name || user.email)[0].toUpperCase()}
+                  </div>
+                )}
               </div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">{user.name}</h1>
+              <h1 className="text-2xl font-bold text-white tracking-tight">{user.name || user.email}</h1>
               <p className="text-primary text-[10px] font-bold uppercase tracking-[0.2em] mt-2 bg-primary/10 inline-block px-3 py-1 rounded-full border border-primary/20">
                 {user.membership} MEMBER
               </p>
@@ -108,19 +129,101 @@ export function ProfilePage() {
 
           <div className="glass p-8 rounded-[32px] border-white/5">
             <h3 className="text-white font-bold text-sm uppercase tracking-widest mb-6">Thông tin tài khoản</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Email</span>
-                <span className="text-gray-300 font-medium">{user.email}</span>
+            <div className="space-y-5">
+              <div>
+                <label className="label-standard">Email</label>
+                <input value={user.email} disabled className="input-standard opacity-60 cursor-not-allowed" />
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Số điện thoại</span>
-                <span className="text-gray-300 font-medium">{user.phone || 'Chưa cập nhật'}</span>
+
+              <div>
+                <label className="label-standard">Họ và tên</label>
+                <input
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value)
+                    if (errors.name) setErrors((s) => ({ ...s, name: undefined }))
+                  }}
+                  className={`input-standard ${errors.name ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
+                />
+                {errors.name && (
+                  <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{errors.name}</div>
+                )}
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Ngày tham gia</span>
-                <span className="text-gray-300 font-medium">30/03/2026</span>
+
+              <div>
+                <label className="label-standard">Số điện thoại</label>
+                <input
+                  value={phone}
+                  onChange={(e) => {
+                    setPhone(e.target.value)
+                    if (errors.phone) setErrors((s) => ({ ...s, phone: undefined }))
+                  }}
+                  className={`input-standard ${errors.phone ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
+                  placeholder="Ví dụ: 090..."
+                />
+                {errors.phone && (
+                  <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{errors.phone}</div>
+                )}
               </div>
+
+              <div>
+                <label className="label-standard">Avatar</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="input-standard !py-2.5"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      if (file.size > 1024 * 1024) {
+                        setNotification({ message: 'Avatar tối đa 1MB', type: 'error' })
+                        return
+                      }
+                      const dataUrl = await new Promise<string>((resolve, reject) => {
+                        const reader = new FileReader()
+                        reader.onload = () => resolve(String(reader.result))
+                        reader.onerror = () => reject(new Error('File read error'))
+                        reader.readAsDataURL(file)
+                      })
+                      setAvatarUrl(dataUrl)
+                    }}
+                  />
+                  {avatarUrl && (
+                    <button
+                      type="button"
+                      className="btn-secondary !px-3 !py-2.5 !text-[10px]"
+                      onClick={() => setAvatarUrl(undefined)}
+                    >
+                      Xóa
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="btn-primary w-full"
+                disabled={isLoading}
+                onClick={async () => {
+                  try {
+                    const next: { name?: string; phone?: string } = {}
+                    const nameTrim = name.trim()
+                    const phoneTrim = phone.trim()
+                    const phoneNorm = phoneTrim ? normalizePhone(phoneTrim) : ''
+                    if (!nameTrim) next.name = 'Vui lòng nhập họ tên'
+                    if (phoneTrim && (phoneNorm.length < 9 || phoneNorm.length > 11)) next.phone = 'Số điện thoại không hợp lệ'
+                    setErrors(next)
+                    if (Object.keys(next).length > 0) return
+                    await updateMe({ name: nameTrim, phone: phoneNorm || undefined, avatarUrl })
+                    setNotification({ message: 'Đã cập nhật tài khoản', type: 'success' })
+                  } catch (e: any) {
+                    setNotification({ message: e.message || 'Lỗi cập nhật', type: 'error' })
+                  }
+                }}
+              >
+                {isLoading ? 'ĐANG LƯU...' : 'LƯU THAY ĐỔI'}
+              </button>
             </div>
           </div>
         </div>

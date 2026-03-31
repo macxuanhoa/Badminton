@@ -146,11 +146,7 @@ export const Court: React.FC<CourtProps> = ({ id }) => {
 
     // Smooth scaling for selection
     const targetScale = status === 'SELECTED' ? 1.02 : 1;
-    meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), delta * 10);
-    
-    // Float effect
-    const targetY = status === 'HOVER' ? 0.1 : 0;
-    meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, targetY, delta * 5);
+    meshRef.current.position.y = 0;
 
     // Update material
     if (surfaceRef.current) {

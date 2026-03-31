@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useStore } from '../store/useStore'
 import { motion, AnimatePresence } from 'framer-motion'
+import api from '../api'
 
 function TimeRemaining({ slotTime, checkInAt }: { slotTime?: string, checkInAt: number }) {
   const [remaining, setRemaining] = useState<string>('--:--')
@@ -64,15 +65,20 @@ export function AdminPage() {
   const lockers = useStore((s) => s.lockers)
   const products = useStore((s) => s.products)
   const user = useStore((s) => s.user)
+  const fetchBookings = useStore((s) => s.fetchBookings)
+  const fetchOrders = useStore((s) => s.fetchOrders)
   const createCheckIn = useStore((s) => s.createCheckIn)
   const updateCheckInStatus = useStore((s) => s.updateCheckInStatus)
   const updateBookingStatus = useStore((s) => s.updateBookingStatus)
   const updateOrderStatus = useStore((s) => s.updateOrderStatus)
 
+  const [userCount, setUserCount] = useState<number | null>(null)
+
   const [activeTab, setActiveTab] = useState<'OPERATIONS' | 'BOOKINGS' | 'ORDERS' | 'PRODUCTS'>('OPERATIONS')
   const [newCheckIn, setNewCheckIn] = useState({ fullName: '', phone: '', lockerNumber: '', courtId: '', slotTime: '' })
   const [searchTerm, setSearchTerm] = useState('')
   const [showManualBooking, setShowManualBooking] = useState(false)
+  const [checkInErrors, setCheckInErrors] = useState<{ fullName?: string; phone?: string }>({})
   const [manualBooking, setManualBooking] = useState({
     courtId: '',
     slotId: '',
@@ -81,6 +87,7 @@ export function AdminPage() {
     phone: '',
     totalPrice: 0,
   })
+  const [manualBookingErrors, setManualBookingErrors] = useState<{ courtId?: string; slotId?: string; fullName?: string; phone?: string }>({})
   const [showProductModal, setShowProductModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState<any>(null)
   const [productForm, setProductForm] = useState({
@@ -92,6 +99,7 @@ export function AdminPage() {
     tag: '',
     image: '🏸'
   })
+  const [productErrors, setProductErrors] = useState<{ name?: string; category?: string; price?: string; stock?: string; image?: string }>({})
 
   const addProduct = useStore((s) => s.addProduct)
   const updateProduct = useStore((s) => s.updateProduct)
@@ -101,6 +109,14 @@ export function AdminPage() {
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
+      const next: { name?: string; category?: string; price?: string; stock?: string; image?: string } = {}
+      if (!productForm.name.trim()) next.name = 'Vui lòng nhập tên sản phẩm'
+      if (!productForm.category.trim()) next.category = 'Vui lòng chọn phân loại'
+      if (!Number.isFinite(productForm.price) || productForm.price <= 0) next.price = 'Giá phải lớn hơn 0'
+      if (!Number.isFinite(productForm.stock) || productForm.stock < 0) next.stock = 'Tồn kho không hợp lệ'
+      if (!String(productForm.image || '').trim()) next.image = 'Vui lòng nhập emoji hoặc URL ảnh'
+      setProductErrors(next)
+      if (Object.keys(next).length > 0) return
       if (editingProduct) {
         await updateProduct(editingProduct.id, productForm)
         setNotification({ message: 'Cập nhật sản phẩm thành công!', type: 'success' })
@@ -111,6 +127,7 @@ export function AdminPage() {
       setShowProductModal(false)
       setEditingProduct(null)
       setProductForm({ name: '', category: 'Vợt Cầu Lông', price: 0, stock: 0, description: '', tag: '', image: '🏸' })
+      setProductErrors({})
     } catch (err: any) {
       setNotification({ message: err.message || 'Lỗi xử lý sản phẩm', type: 'error' })
     }
@@ -119,6 +136,7 @@ export function AdminPage() {
   const openProductModal = (product?: any) => {
     if (product) {
       setEditingProduct(product)
+      setProductErrors({})
       setProductForm({
         name: product.name,
         category: product.category,
@@ -130,6 +148,7 @@ export function AdminPage() {
       })
     } else {
       setEditingProduct(null)
+      setProductErrors({})
       setProductForm({ name: '', category: 'Vợt Cầu Lông', price: 0, stock: 0, description: '', tag: '', image: '🏸' })
     }
     setShowProductModal(true)
@@ -142,9 +161,29 @@ export function AdminPage() {
   const releaseBooking = useStore((s) => s.releaseBooking)
   const extendBooking = useStore((s) => s.extendBooking)
 
+  const createOrder = useStore((s) => s.createOrder)
+
+  const normalizePhone = (v: string) => v.replace(/[^\d]/g, '')
+
+  const handleManualOrder = async (e: React.FormEvent) => {
+    e.preventDefault()
+    // Simple mock logic for staff creating order at counter
+    // In real app, you'd have a cart UI in admin too
+    setNotification({ message: 'Tính năng bán hàng tại quầy đang được cập nhật!', type: 'success' })
+  }
+
   const handleManualBooking = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!manualBooking.courtId || !manualBooking.slotId || !manualBooking.phone) return
+    const next: { courtId?: string; slotId?: string; fullName?: string; phone?: string } = {}
+    const phoneRaw = manualBooking.phone.trim()
+    const phone = normalizePhone(phoneRaw)
+    if (!manualBooking.courtId) next.courtId = 'Vui lòng chọn sân'
+    if (!manualBooking.slotId) next.slotId = 'Vui lòng chọn giờ'
+    if (!manualBooking.fullName.trim()) next.fullName = 'Vui lòng nhập tên khách'
+    if (!phone) next.phone = 'Vui lòng nhập số điện thoại'
+    else if (phone.length < 9 || phone.length > 11) next.phone = 'Số điện thoại không hợp lệ'
+    setManualBookingErrors(next)
+    if (Object.keys(next).length > 0) return
     
     const court = courts.find(c => c.id === manualBooking.courtId)
     if (!court) return
@@ -156,7 +195,7 @@ export function AdminPage() {
         slotId: manualBooking.slotId,
         slotTime: manualBooking.slotTime,
         fullName: manualBooking.fullName,
-        phone: manualBooking.phone,
+        phone,
         note: 'Staff Manual Booking',
         totalPrice: manualBooking.totalPrice,
         paymentMethod: 'CASH',
@@ -164,6 +203,8 @@ export function AdminPage() {
       })
       setShowManualBooking(false)
       setManualBooking({ courtId: '', slotId: '', slotTime: '', fullName: '', phone: '', totalPrice: 0 })
+      setManualBookingErrors({})
+      setNotification({ message: 'Đặt sân thủ công thành công', type: 'success' })
     } catch (err: any) {
       setNotification({ message: err.message || 'Lỗi đặt sân thủ công', type: 'error' })
     }
@@ -202,10 +243,18 @@ export function AdminPage() {
 
   const handleCheckIn = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newCheckIn.fullName || !newCheckIn.phone) return
+    const next: { fullName?: string; phone?: string } = {}
+    const name = newCheckIn.fullName.trim()
+    const phoneRaw = newCheckIn.phone.trim()
+    const phone = normalizePhone(phoneRaw)
+    if (!name) next.fullName = 'Vui lòng nhập họ tên'
+    if (!phone) next.phone = 'Vui lòng nhập số điện thoại'
+    else if (phone.length < 9 || phone.length > 11) next.phone = 'Số điện thoại không hợp lệ'
+    setCheckInErrors(next)
+    if (Object.keys(next).length > 0) return
     
     // Prevent duplicate active check-ins
-    const alreadyActive = checkIns.some(c => c.phone === newCheckIn.phone && c.status === 'ACTIVE')
+    const alreadyActive = checkIns.some(c => c.phone === phone && c.status === 'ACTIVE')
     if (alreadyActive) {
       setNotification({ message: 'Khách hàng này hiện đang có mặt tại Hub.', type: 'error' })
       return
@@ -214,13 +263,14 @@ export function AdminPage() {
     try {
       await createCheckIn({
         userId: `user-${Date.now()}`,
-        fullName: newCheckIn.fullName,
-        phone: newCheckIn.phone,
+        fullName: name,
+        phone,
         lockerNumber: newCheckIn.lockerNumber || undefined,
         courtId: newCheckIn.courtId || undefined,
         slotTime: newCheckIn.slotTime || undefined
       })
       setNewCheckIn({ fullName: '', phone: '', lockerNumber: '', courtId: '', slotTime: '' })
+      setCheckInErrors({})
       setNotification({ message: 'Check-in thành công!', type: 'success' })
     } catch (err: any) {
       setNotification({ message: err.message || 'Lỗi check-in', type: 'error' })
@@ -241,11 +291,48 @@ export function AdminPage() {
     c.phone.includes(searchTerm)
   )
 
+  useEffect(() => {
+    if (!user) return
+    if (user.role === 'ADMIN' || user.role === 'STAFF') {
+      fetchBookings()
+      fetchOrders()
+    }
+  }, [user, fetchBookings, fetchOrders])
+
+  useEffect(() => {
+    if (user?.role !== 'ADMIN') {
+      setUserCount(null)
+      return
+    }
+    let mounted = true
+    ;(async () => {
+      const res = await api.get('/users').catch(() => null)
+      if (!mounted) return
+      setUserCount(Array.isArray(res?.data) ? res?.data.length : null)
+    })()
+    return () => {
+      mounted = false
+    }
+  }, [user?.role])
+
+  const stats = useMemo(() => {
+    const bookingRevenue = bookings.filter((b) => b.status !== 'CANCELLED').reduce((sum, b) => sum + Number(b.totalPrice || 0), 0)
+    const orderRevenue = orders.filter((o) => o.status !== 'CANCELLED').reduce((sum, o) => sum + Number(o.total || 0), 0)
+    const activeCheckIns = checkIns.filter((c) => c.status === 'ACTIVE').length
+    return {
+      bookingCount: bookings.length,
+      orderCount: orders.length,
+      bookingRevenue,
+      orderRevenue,
+      activeCheckIns,
+    }
+  }, [bookings, orders, checkIns])
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mx-auto max-w-7xl px-6 py-6 lg:h-[calc(100vh-72px)] flex flex-col"
+      className="mx-auto max-w-7xl px-6 py-6 flex flex-col"
     >
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-6 flex-shrink-0">
         <div>
@@ -267,6 +354,29 @@ export function AdminPage() {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="glass rounded-2xl border border-white/5 p-5">
+          <div className="text-muted text-[10px] font-bold uppercase tracking-widest">Booking</div>
+          <div className="text-white text-2xl font-black tracking-tight mt-1">{stats.bookingCount}</div>
+        </div>
+        <div className="glass rounded-2xl border border-white/5 p-5">
+          <div className="text-muted text-[10px] font-bold uppercase tracking-widest">Đơn hàng</div>
+          <div className="text-white text-2xl font-black tracking-tight mt-1">{stats.orderCount}</div>
+        </div>
+        <div className="glass rounded-2xl border border-white/5 p-5">
+          <div className="text-muted text-[10px] font-bold uppercase tracking-widest">Doanh thu sân</div>
+          <div className="text-white text-2xl font-black tracking-tight mt-1">{Math.round(stats.bookingRevenue).toLocaleString()}đ</div>
+        </div>
+        <div className="glass rounded-2xl border border-white/5 p-5">
+          <div className="text-muted text-[10px] font-bold uppercase tracking-widest">Doanh thu store</div>
+          <div className="text-white text-2xl font-black tracking-tight mt-1">{Math.round(stats.orderRevenue).toLocaleString()}đ</div>
+        </div>
+        <div className="glass rounded-2xl border border-white/5 p-5">
+          <div className="text-muted text-[10px] font-bold uppercase tracking-widest">Người dùng</div>
+          <div className="text-white text-2xl font-black tracking-tight mt-1">{userCount ?? '-'}</div>
+        </div>
+      </div>
+
       <AnimatePresence mode="wait">
         {activeTab === 'OPERATIONS' && (
           <motion.div 
@@ -277,7 +387,7 @@ export function AdminPage() {
             className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 min-h-0"
           >
             {/* Quick Action Sidebar */}
-            <div className="lg:col-span-4 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
+            <div className="lg:col-span-4 space-y-6">
               <div className="glass p-6 rounded-3xl border border-white/5 shadow-2xl">
                 <h2 className="text-white font-bold text-lg mb-6 flex items-center gap-3">
                   <span className="w-1.5 h-5 bg-primary rounded-full"></span>
@@ -289,20 +399,32 @@ export function AdminPage() {
                     <input
                       type="text"
                       value={newCheckIn.phone}
-                      onChange={(e) => handlePhoneChange(e.target.value)}
-                      className="input-standard !py-3 !px-4 !text-sm"
+                      onChange={(e) => {
+                        handlePhoneChange(e.target.value)
+                        if (checkInErrors.phone) setCheckInErrors((s) => ({ ...s, phone: undefined }))
+                      }}
+                      className={`input-standard !py-3 !px-4 !text-sm ${checkInErrors.phone ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
                       placeholder="Nhập SĐT khách hàng"
                     />
+                    {checkInErrors.phone && (
+                      <div className="mt-2 text-red-400 text-[9px] font-bold uppercase tracking-widest">{checkInErrors.phone}</div>
+                    )}
                   </div>
                   <div>
                     <label className="label-standard text-[9px]">Họ Tên</label>
                     <input
                       type="text"
                       value={newCheckIn.fullName}
-                      onChange={(e) => setNewCheckIn({ ...newCheckIn, fullName: e.target.value })}
-                      className="input-standard !py-3 !px-4 !text-sm"
+                      onChange={(e) => {
+                        setNewCheckIn({ ...newCheckIn, fullName: e.target.value })
+                        if (checkInErrors.fullName) setCheckInErrors((s) => ({ ...s, fullName: undefined }))
+                      }}
+                      className={`input-standard !py-3 !px-4 !text-sm ${checkInErrors.fullName ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
                       placeholder="Hệ thống tự điền..."
                     />
+                    {checkInErrors.fullName && (
+                      <div className="mt-2 text-red-400 text-[9px] font-bold uppercase tracking-widest">{checkInErrors.fullName}</div>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -406,7 +528,7 @@ export function AdminPage() {
             </div>
 
             {/* Main Content Area */}
-            <div className="lg:col-span-8 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
+            <div className="lg:col-span-8 space-y-6">
               {/* VIP Presence Banner */}
               {user && (
                 <div className="glass p-6 rounded-3xl border border-primary/20 flex items-center justify-between bg-gradient-to-r from-primary/5 to-transparent shadow-xl flex-shrink-0">
@@ -431,7 +553,7 @@ export function AdminPage() {
                 </div>
               )}
 
-              <div className="glass p-8 rounded-3xl border border-white/5 shadow-2xl overflow-y-auto min-h-full">
+              <div className="glass p-8 rounded-3xl border border-white/5 shadow-2xl">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                   <h2 className="text-white font-bold text-xl tracking-tight uppercase">KHÁCH TẠI HUB</h2>
                   <div className="relative flex-1 max-w-sm">
@@ -659,8 +781,8 @@ export function AdminPage() {
                   </div>
                   <div className="flex justify-between items-start mb-8">
                     <div>
-                      <div className="text-white font-bold text-xl tracking-tight">{o.fullName}</div>
-                      <div className="text-primary text-xs font-bold mt-1 opacity-80">{o.phone}</div>
+                      <div className="text-white font-bold text-xl tracking-tight">{o.guestName || (o.userId ? 'Member' : 'Khách')}</div>
+                      <div className="text-primary text-xs font-bold mt-1 opacity-80">{o.guestPhone || '-'}</div>
                     </div>
                   </div>
                   <div className="space-y-4 mb-8 border-y border-white/5 py-6">
@@ -809,14 +931,20 @@ export function AdminPage() {
                        <label className="label-standard">Chọn Sân</label>
                        <select 
                          value={manualBooking.courtId}
-                         onChange={(e) => setManualBooking({...manualBooking, courtId: e.target.value})}
-                         className="input-standard appearance-none"
+                         onChange={(e) => {
+                           setManualBooking({ ...manualBooking, courtId: e.target.value })
+                           if (manualBookingErrors.courtId) setManualBookingErrors((s) => ({ ...s, courtId: undefined }))
+                         }}
+                         className={`input-standard appearance-none ${manualBookingErrors.courtId ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
                        >
                          <option value="">-- Chọn sân --</option>
                          {courts.map(c => (
                            <option key={c.id} value={c.id}>{c.name} ({c.type})</option>
                          ))}
                        </select>
+                       {manualBookingErrors.courtId && (
+                         <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{manualBookingErrors.courtId}</div>
+                       )}
                     </div>
                     <div>
                        <label className="label-standard">Chọn Khung Giờ</label>
@@ -825,14 +953,18 @@ export function AdminPage() {
                          onChange={(e) => {
                            const slot = slots.find(s => s.id === e.target.value);
                            if (slot) setManualBooking({...manualBooking, slotId: slot.id, slotTime: slot.time, totalPrice: slot.price});
+                           if (manualBookingErrors.slotId) setManualBookingErrors((s) => ({ ...s, slotId: undefined }))
                          }}
-                         className="input-standard appearance-none"
+                         className={`input-standard appearance-none ${manualBookingErrors.slotId ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
                        >
                          <option value="">-- Chọn giờ --</option>
                          {slots.map(s => (
                            <option key={s.id} value={s.id}>{s.time}</option>
                          ))}
                        </select>
+                       {manualBookingErrors.slotId && (
+                         <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{manualBookingErrors.slotId}</div>
+                       )}
                     </div>
                  </div>
 
@@ -841,19 +973,31 @@ export function AdminPage() {
                        <label className="label-standard">Khách Hàng</label>
                        <input 
                          value={manualBooking.fullName}
-                         onChange={(e) => setManualBooking({...manualBooking, fullName: e.target.value})}
-                         className="input-standard" 
+                         onChange={(e) => {
+                           setManualBooking({ ...manualBooking, fullName: e.target.value })
+                           if (manualBookingErrors.fullName) setManualBookingErrors((s) => ({ ...s, fullName: undefined }))
+                         }}
+                         className={`input-standard ${manualBookingErrors.fullName ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`} 
                          placeholder="Nhập tên khách" 
                        />
+                       {manualBookingErrors.fullName && (
+                         <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{manualBookingErrors.fullName}</div>
+                       )}
                     </div>
                     <div>
                        <label className="label-standard">Số Điện Thoại</label>
                        <input 
                          value={manualBooking.phone}
-                         onChange={(e) => setManualBooking({...manualBooking, phone: e.target.value})}
-                         className="input-standard" 
+                         onChange={(e) => {
+                           setManualBooking({ ...manualBooking, phone: e.target.value })
+                           if (manualBookingErrors.phone) setManualBookingErrors((s) => ({ ...s, phone: undefined }))
+                         }}
+                         className={`input-standard ${manualBookingErrors.phone ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`} 
                          placeholder="Nhập SĐT để quản lý" 
                        />
+                       {manualBookingErrors.phone && (
+                         <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{manualBookingErrors.phone}</div>
+                       )}
                     </div>
                  </div>
 
@@ -898,19 +1042,27 @@ export function AdminPage() {
                   <div className="col-span-2 md:col-span-1">
                     <label className="label-standard">Tên sản phẩm</label>
                     <input 
-                      required
                       value={productForm.name}
-                      onChange={(e) => setProductForm({...productForm, name: e.target.value})}
-                      className="input-standard" 
+                      onChange={(e) => {
+                        setProductForm({ ...productForm, name: e.target.value })
+                        if (productErrors.name) setProductErrors((s) => ({ ...s, name: undefined }))
+                      }}
+                      className={`input-standard ${productErrors.name ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`} 
                       placeholder="Ví dụ: Vợt Yonex Astrox..." 
                     />
+                    {productErrors.name && (
+                      <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{productErrors.name}</div>
+                    )}
                   </div>
                   <div className="col-span-2 md:col-span-1">
                     <label className="label-standard">Phân loại</label>
                     <select 
                       value={productForm.category}
-                      onChange={(e) => setProductForm({...productForm, category: e.target.value})}
-                      className="input-standard appearance-none"
+                      onChange={(e) => {
+                        setProductForm({ ...productForm, category: e.target.value })
+                        if (productErrors.category) setProductErrors((s) => ({ ...s, category: undefined }))
+                      }}
+                      className={`input-standard appearance-none ${productErrors.category ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
                     >
                       <option value="Vợt Cầu Lông">Vợt Cầu Lông</option>
                       <option value="Quả Cầu Lông">Quả Cầu Lông</option>
@@ -918,26 +1070,39 @@ export function AdminPage() {
                       <option value="Phụ Kiện">Phụ Kiện</option>
                       <option value="Nước uống">Nước uống</option>
                     </select>
+                    {productErrors.category && (
+                      <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{productErrors.category}</div>
+                    )}
                   </div>
                   <div>
                     <label className="label-standard">Giá bán (VNĐ)</label>
                     <input 
                       type="number"
-                      required
                       value={productForm.price}
-                      onChange={(e) => setProductForm({...productForm, price: parseInt(e.target.value)})}
-                      className="input-standard" 
+                      onChange={(e) => {
+                        setProductForm({ ...productForm, price: parseInt(e.target.value) })
+                        if (productErrors.price) setProductErrors((s) => ({ ...s, price: undefined }))
+                      }}
+                      className={`input-standard ${productErrors.price ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`} 
                     />
+                    {productErrors.price && (
+                      <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{productErrors.price}</div>
+                    )}
                   </div>
                   <div>
                     <label className="label-standard">Số lượng tồn kho</label>
                     <input 
                       type="number"
-                      required
                       value={productForm.stock}
-                      onChange={(e) => setProductForm({...productForm, stock: parseInt(e.target.value)})}
-                      className="input-standard" 
+                      onChange={(e) => {
+                        setProductForm({ ...productForm, stock: parseInt(e.target.value) })
+                        if (productErrors.stock) setProductErrors((s) => ({ ...s, stock: undefined }))
+                      }}
+                      className={`input-standard ${productErrors.stock ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`} 
                     />
+                    {productErrors.stock && (
+                      <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{productErrors.stock}</div>
+                    )}
                   </div>
                   <div className="col-span-2">
                     <label className="label-standard">Mô tả ngắn</label>
@@ -965,9 +1130,15 @@ export function AdminPage() {
                     <label className="label-standard">Biểu tượng (Emoji)</label>
                     <input 
                       value={productForm.image}
-                      onChange={(e) => setProductForm({...productForm, image: e.target.value})}
-                      className="input-standard text-center text-2xl" 
+                      onChange={(e) => {
+                        setProductForm({ ...productForm, image: e.target.value })
+                        if (productErrors.image) setProductErrors((s) => ({ ...s, image: undefined }))
+                      }}
+                      className={`input-standard text-center text-2xl ${productErrors.image ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`} 
                     />
+                    {productErrors.image && (
+                      <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{productErrors.image}</div>
+                    )}
                   </div>
                 </div>
 

@@ -6,7 +6,7 @@ export class BookingsService {
   constructor(private prisma: PrismaService) {}
 
   async createBooking(
-    userId: string,
+    userId: string | null,
     courtId: string,
     slotId: string,
     isManual: boolean = false,
@@ -31,14 +31,18 @@ export class BookingsService {
       throw new BadRequestException('Khung giờ này vừa có người đặt xong.');
     }
 
-    // 2. Check user and balance
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('Người dùng không tồn tại.');
+    // 2. Check user and balance (if userId exists)
+    let user = null;
+    if (userId) {
+      user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (!user) throw new NotFoundException('Người dùng không tồn tại.');
+    }
 
     const slot = await this.prisma.slot.findUnique({ where: { id: slotId } });
     if (!slot) throw new NotFoundException('Khung giờ không tồn tại.');
 
-    if (!isManual && user.walletBalance < slot.price) {
+    // Only check balance if it's a member booking (not manual and has userId)
+    if (!isManual && userId && user && user.walletBalance < slot.price) {
       throw new BadRequestException('Số dư ví không đủ.');
     }
 
@@ -62,11 +66,13 @@ export class BookingsService {
       data: { status: 'BOOKED' },
     });
 
-    if (isManual) {
+    // Case 1: Manual (Staff/Admin) OR Guest (no userId)
+    if (isManual || !userId) {
       const [booking] = await this.prisma.$transaction([bookingCreate, courtUpdate]);
       return booking;
     }
 
+    // Case 2: Member (has userId)
     const userUpdate = this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -100,8 +106,30 @@ export class BookingsService {
   async getBookings() {
     return this.prisma.booking.findMany({
       include: {
-        user: true,
-        court: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            phone: true,
+            avatarUrl: true,
+            role: true,
+            membership: true,
+            walletBalance: true,
+            points: true,
+            skillLevel: true,
+            createdAt: true,
+          },
+        },
+        court: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            status: true,
+            price: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });

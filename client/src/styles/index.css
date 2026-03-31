@@ -2,64 +2,160 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --app-bg: #020617;
+    --app-fg: #f1f5f9;
+    --surface-1: rgba(15, 23, 42, 0.8);
+    --surface-2: rgba(2, 6, 23, 0.88);
+    --border: rgba(255, 255, 255, 0.06);
+    --muted: #94a3b8;
+  }
+
+  html[data-theme='light'] {
+    --app-bg: #f3f4f6;
+    --app-fg: #0f172a;
+    --surface-1: rgba(255, 255, 255, 0.92);
+    --surface-2: rgba(248, 250, 252, 0.95);
+    --border: rgba(15, 23, 42, 0.12);
+    --muted: #334155;
+  }
+
+  html, body, #root {
+    height: 100%;
+  }
+
+  html[data-theme='light'] .text-white {
+    color: var(--app-fg) !important;
+  }
+
+  html[data-theme='light'] .text-gray-400,
+  html[data-theme='light'] .text-gray-500,
+  html[data-theme='light'] .text-gray-600,
+  html[data-theme='light'] .text-slate-200,
+  html[data-theme='light'] .text-slate-400,
+  html[data-theme='light'] .text-slate-500,
+  html[data-theme='light'] .text-slate-600 {
+    color: var(--muted) !important;
+  }
+
+  html[data-theme='light'] .bg-black {
+    background-color: var(--app-bg) !important;
+  }
+
+  html[data-theme='light'] .border-white\/5,
+  html[data-theme='light'] .border-white\/10,
+  html[data-theme='light'] .border-white\/20 {
+    border-color: var(--border) !important;
+  }
+
+  html[data-theme='light'] .bg-white\/5,
+  html[data-theme='light'] .bg-white\/\[0\.02\],
+  html[data-theme='light'] .bg-white\/\[0\.03\] {
+    background-color: rgba(15, 23, 42, 0.04) !important;
+  }
+
+  html[data-theme='light'] .bg-white\/10 {
+    background-color: rgba(15, 23, 42, 0.07) !important;
+  }
+
+  html[data-theme='light'] .bg-black\/30,
+  html[data-theme='light'] .bg-black\/40,
+  html[data-theme='light'] .bg-black\/60 {
+    background-color: rgba(15, 23, 42, 0.06) !important;
+  }
+
+  html[data-theme='light'] .glass {
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  }
+
+  html[data-theme='light'] .glass-dark {
+    box-shadow: 0 16px 48px rgba(15, 23, 42, 0.10);
+  }
+}
+
 @layer components {
   .glass {
-    @apply bg-white/5 backdrop-blur-xl border border-surface-border shadow-2xl;
+    background-color: var(--surface-1);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   }
   
   .glass-dark {
-    @apply bg-black/40 backdrop-blur-2xl border border-white/5 shadow-2xl;
+    background-color: var(--surface-2);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
   }
 
   .glass-card {
-    @apply relative overflow-hidden transition-all duration-300 hover:bg-white/10 hover:border-white/20;
+    @apply relative overflow-hidden transition-all duration-200;
+    background-color: color-mix(in srgb, var(--surface-1) 70%, transparent);
+    border: 1px solid var(--border);
   }
 
   /* Senior/Tech Lead Standard Components */
   .btn-primary {
-    @apply bg-primary hover:bg-primary-hover text-surface font-bold px-6 py-3 rounded-xl 
-           transition-all duration-200 active:scale-[0.98] shadow-lg shadow-primary-glow
-           uppercase tracking-wider text-sm flex items-center justify-center gap-2;
+    @apply bg-primary hover:bg-[#1ea37a] text-[#020617] font-bold px-5 py-2.5 rounded-lg 
+           transition-all duration-200 active:scale-[0.98] shadow-sm
+           uppercase tracking-wider text-[11px] flex items-center justify-center gap-2;
   }
 
   .btn-secondary {
-    @apply glass hover:bg-white/10 text-white font-bold px-6 py-3 rounded-xl
-           transition-all duration-200 active:scale-[0.98]
-           uppercase tracking-wider text-sm flex items-center justify-center gap-2;
+    @apply font-bold px-5 py-2.5 rounded-lg transition-all duration-200 active:scale-[0.98]
+           uppercase tracking-wider text-[11px] flex items-center justify-center gap-2;
+    background-color: color-mix(in srgb, var(--surface-2) 70%, transparent);
+    border: 1px solid var(--border);
+    color: var(--app-fg);
   }
 
   .input-standard {
-    @apply w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-white 
-           focus:border-primary outline-none transition-all placeholder:text-gray-600;
+    @apply w-full rounded-xl px-4 py-3 text-sm outline-none transition-all;
+    background-color: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--app-fg);
+    caret-color: var(--app-fg);
   }
 
   .label-standard {
-    @apply text-gray-500 text-[10px] font-bold uppercase tracking-[0.15em] ml-1 mb-1.5 block;
+    @apply text-gray-500 text-[10px] font-bold uppercase tracking-[0.1em] ml-1 mb-1.5 block;
   }
+}
+
+@layer utilities {
+  .bg-app { background-color: var(--app-bg); }
+  .text-app { color: var(--app-fg); }
+  .text-muted { color: var(--muted); }
+  .border-app { border-color: var(--border); }
+}
+
+.input-standard::placeholder {
+  color: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+
+.input-standard:focus {
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
 }
 
 :root {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.92);
-  background-color: #020617;
+  color: var(--app-fg);
+  background-color: var(--app-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-html, body, #root {
-  min-height: 100%;
-  background-color: #020617;
-}
-
 body {
   margin: 0;
   overflow-y: auto;
-  background: radial-gradient(circle at 50% -20%, #0f172a 0%, #020617 100%);
-  background-attachment: fixed;
+  background: var(--app-bg);
+  color: var(--app-fg);
 }
 
 /* Custom Scrollbar for modern look */

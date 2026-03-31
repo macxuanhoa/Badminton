@@ -9,13 +9,10 @@ export const Zones3D: React.FC = () => {
   const trussMatRef = useRef<THREE.MeshStandardMaterial>(null);
 
   useFrame((state) => {
-    const camY = state.camera.position.y;
-    // Fade out roof elements as camera goes above 15m
-    const opacity = THREE.MathUtils.lerp(1, 0.12, THREE.MathUtils.clamp((camY - 18) / 12, 0, 1));
-    
-    if (domeMatRef.current) domeMatRef.current.opacity = opacity;
-    if (ceilingMatRef.current) ceilingMatRef.current.opacity = camY > 20 ? 0.05 : opacity; // Almost hide ceiling when looking from top
-    if (trussMatRef.current) trussMatRef.current.opacity = opacity;
+    // Fixed visibility, no fade out
+    if (domeMatRef.current) domeMatRef.current.opacity = 1;
+    if (ceilingMatRef.current) ceilingMatRef.current.opacity = 0.8;
+    if (trussMatRef.current) trussMatRef.current.opacity = 1;
   });
 
   return (

@@ -4,6 +4,8 @@ import App from './App'
 import './styles/index.css'
 import { BrowserRouter } from 'react-router-dom'
 
+document.documentElement.dataset.theme = localStorage.getItem('theme') === 'light' ? 'light' : 'dark'
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>

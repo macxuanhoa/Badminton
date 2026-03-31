@@ -12,11 +12,15 @@ model User {
   email         String    @unique
   password      String
   name          String?
+  phone         String?
+  avatarUrl     String?
   role          String    @default("USER") // USER, STAFF, ADMIN
   walletBalance Float     @default(0)
   membership    String    @default("BASIC")
   points        Int       @default(0)
   skillLevel    String?
+  passwordResetTokenHash String?
+  passwordResetExpiresAt DateTime?
   bookings      Booking[]
   orders        Order[]
   lockers       Locker[]
@@ -41,8 +45,8 @@ model Slot {
 
 model Booking {
   id            String   @id @default(uuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id])
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id])
   courtId       String
   court         Court    @relation(fields: [courtId], references: [id])
   slotId        String
@@ -57,13 +61,16 @@ model Booking {
 }
 
 model Order {
-  id         String   @id @default(uuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  items      String   // JSON string of items
-  total      Float
-  status     String   @default("PENDING") // PENDING, DELIVERED
-  createdAt  DateTime @default(now())
+  id            String   @id @default(uuid())
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id])
+  guestName     String?
+  guestPhone    String?
+  items         String   // JSON string of items
+  total         Float
+  paymentMethod String?  @default("CASH")
+  status        String   @default("PENDING") // PENDING, DELIVERED, CANCELLED
+  createdAt     DateTime @default(now())
 }
 
 model Product {

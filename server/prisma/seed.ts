@@ -91,7 +91,7 @@ async function main() {
       stock: 5,
       description: 'Vợt thiên công, phù hợp người chơi có lực tay tốt.',
       tag: 'Best Seller',
-      image: '🏸' 
+      image: 'https://images.unsplash.com/photo-1558365849-6ebb21c3f4df?q=80&w=1600&auto=format&fit=crop'
     },
     { 
       id: 'racket-02', 
@@ -100,7 +100,7 @@ async function main() {
       price: 3200000, 
       stock: 8,
       description: 'Vợt cân bằng, linh hoạt trong cả tấn công và phòng thủ.',
-      image: '🏸' 
+      image: 'https://images.unsplash.com/photo-1626225967045-9410dd993e41?q=80&w=1600&auto=format&fit=crop'
     },
     { 
       id: 'shuttle-01', 
@@ -110,7 +110,7 @@ async function main() {
       stock: 50,
       description: 'Cầu lông vũ tiêu chuẩn thi đấu, độ bền cao.',
       tag: 'Hot',
-      image: '🏸' 
+      image: 'https://images.unsplash.com/photo-1521537634581-0dced2fee2ef?q=80&w=1600&auto=format&fit=crop'
     },
     { 
       id: 'shoes-01', 
@@ -120,7 +120,7 @@ async function main() {
       stock: 3,
       description: 'Phiên bản giới hạn Tai Tzu Ying, hỗ trợ di chuyển tối ưu.',
       tag: 'New',
-      image: '👟' 
+      image: 'https://images.unsplash.com/photo-1517256673644-36ad11246d21?q=80&w=1600&auto=format&fit=crop'
     },
     { 
       id: 'grip-01', 
@@ -129,14 +129,22 @@ async function main() {
       price: 45000, 
       stock: 100,
       description: 'Độ bám tốt, thấm hút mồ hôi hiệu quả.',
-      image: '🎗️' 
+      image: 'https://images.unsplash.com/photo-1519861531473-9200262188bf?q=80&w=1600&auto=format&fit=crop'
     },
   ];
 
   for (const p of productsData) {
     await prisma.product.upsert({
       where: { id: p.id },
-      update: {},
+      update: {
+        name: p.name,
+        category: p.category,
+        price: p.price,
+        stock: p.stock,
+        description: p.description,
+        tag: p.tag,
+        image: p.image,
+      },
       create: p,
     });
   }

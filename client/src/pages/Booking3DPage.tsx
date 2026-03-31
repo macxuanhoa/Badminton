@@ -31,13 +31,69 @@ export function Booking3DPage() {
   }, [updatePresence])
 
   const selectedCourt = useMemo(() => courts.find((c) => c.id === selectedCourtId) || null, [courts, selectedCourtId])
-  const [fullName, setFullName] = useState('')
-  const [phone, setPhone] = useState('')
+  const user = useStore((s) => s.user)
+  const [fullName, setFullName] = useState(user?.name || '')
+  const [phone, setPhone] = useState(user?.phone || '')
+
+  // Sync user info if logged in
+  useEffect(() => {
+    if (user) {
+      setFullName(user.name || '')
+      setPhone(user.phone || '')
+    }
+  }, [user])
   const [note, setNote] = useState('')
   const [doneId, setDoneId] = useState<string | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'TRANSFER' | 'CARD'>('CASH')
   const [zoneFilter, setZoneFilter] = useState<'BADMINTON' | 'PICKLEBALL' | 'TENNIS' | null>(null)
   const setNotification = useStore((s) => s.setNotification)
+  const [errors, setErrors] = useState<{ fullName?: string; phone?: string }>({})
+  const [transferConfirmed, setTransferConfirmed] = useState(false)
+  const [card, setCard] = useState({ number: '', name: '', expiry: '', cvc: '' })
+  const [payErrors, setPayErrors] = useState<{ transfer?: string; cardNumber?: string; cardName?: string; cardExpiry?: string; cardCvc?: string }>({})
+  const [paymentOpen, setPaymentOpen] = useState(false)
+  const theme = useStore((s) => s.theme)
+  const toggleTheme = useStore((s) => s.toggleTheme)
+  const logout = useStore((s) => s.logout)
+  const normalizePhone = (v: string) => v.replace(/[^\d]/g, '')
+  const digitsOnly = (v: string) => v.replace(/[^\d]/g, '')
+
+  const luhnOk = (num: string) => {
+    const s = digitsOnly(num)
+    if (s.length < 13 || s.length > 19) return false
+    let sum = 0
+    let alt = false
+    for (let i = s.length - 1; i >= 0; i--) {
+      let n = Number(s[i])
+      if (alt) {
+        n *= 2
+        if (n > 9) n -= 9
+      }
+      sum += n
+      alt = !alt
+    }
+    return sum % 10 === 0
+  }
+
+  const expiryOk = (v: string) => {
+    const m = v.trim().match(/^(\d{2})\s*\/\s*(\d{2})$/)
+    if (!m) return false
+    const mm = Number(m[1])
+    const yy = Number(m[2])
+    if (mm < 1 || mm > 12) return false
+    const now = new Date()
+    const curYY = now.getFullYear() % 100
+    const curMM = now.getMonth() + 1
+    if (yy < curYY) return false
+    if (yy === curYY && mm < curMM) return false
+    return true
+  }
+
+  const steps = useMemo(() => (['EXPLORE', 'SELECT_COURT', 'CHOOSE_TIME', 'CONFIRM'] as const), [])
+  const stepIndex = useMemo(() => {
+    const idx = steps.indexOf(currentStep as any)
+    return idx >= 0 ? idx : 0
+  }, [steps, currentStep])
 
   const groupedCourts = useMemo(() => {
     return courts.reduce((acc, c) => {
@@ -72,13 +128,55 @@ export function Booking3DPage() {
   }, [selectedCourtId])
 
   const total = selectedSlot?.price || selectedCourt?.price || 0
+  const transferQrSrc = '/thanhtoan/maqr.jpg'
+  const transferBankName = 'MB Bank'
+  const transferAccount = '0931440055'
 
   return (
-    <div className="relative w-full min-h-screen overflow-y-auto bg-[#020617]">
+    <div className="relative w-full h-screen overflow-hidden bg-[#020617]">
       <Scene />
+
+      <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[260] pointer-events-auto">
+        <div className="flex items-center gap-4 bg-white/5 p-2 rounded-2xl border border-white/5">
+          {['Khám phá', 'Chọn sân', 'Chọn giờ', 'Xác nhận'].map((label, i) => (
+            <div key={label} className="flex items-center gap-2">
+              <div
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                  i === stepIndex ? 'bg-primary text-surface' : 'bg-white/10 text-gray-500'
+                }`}
+              >
+                {i + 1}
+              </div>
+              <span className={`text-[10px] font-bold uppercase tracking-widest ${i === stepIndex ? 'text-white' : 'text-gray-600'}`}>
+                {label}
+              </span>
+              {i < 3 && <div className="w-4 h-px bg-white/10" />}
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* View Mode Toggles */}
       <div className="absolute top-24 right-8 z-[250] flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border glass border-white/10 text-gray-300 hover:bg-white/5"
+        >
+          {theme === 'light' ? 'Dark' : 'Light'}
+        </button>
+        {user && (
+          <button
+            type="button"
+            onClick={() => {
+              logout()
+              setNotification({ message: 'Đã đăng xuất', type: 'success' })
+            }}
+            className="px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border glass border-white/10 text-gray-300 hover:bg-white/5"
+          >
+            Đăng xuất
+          </button>
+        )}
         <button 
           onClick={() => setViewMode('OVERVIEW')}
           className={`px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border ${viewMode === 'OVERVIEW' ? 'bg-primary border-primary text-surface shadow-lg shadow-primary-glow' : 'glass border-white/10 text-gray-400 hover:bg-white/5'}`}
@@ -110,7 +208,7 @@ export function Booking3DPage() {
             }}
           >
             {!zoneFilter ? (
-              <div className="space-y-2 overflow-y-auto custom-scrollbar flex-1 pr-1">
+              <div className="space-y-2 overflow-y-auto custom-scrollbar flex-1 pr-1 max-h-[180px]">
                 <div className="text-[8px] font-black uppercase tracking-[0.25em] text-gray-500 opacity-90">
                   Tất cả các sân
                 </div>
@@ -310,19 +408,31 @@ export function Booking3DPage() {
                     <label className="label-standard">Họ và tên</label>
                     <input
                       value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="input-standard"
+                      onChange={(e) => {
+                        setFullName(e.target.value)
+                        if (errors.fullName) setErrors((s) => ({ ...s, fullName: undefined }))
+                      }}
+                      className={`input-standard ${errors.fullName ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
                       placeholder="Nhập tên của bạn"
                     />
+                    {errors.fullName && (
+                      <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{errors.fullName}</div>
+                    )}
                   </div>
                   <div>
                     <label className="label-standard">Số điện thoại</label>
                     <input
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="input-standard"
+                      onChange={(e) => {
+                        setPhone(e.target.value)
+                        if (errors.phone) setErrors((s) => ({ ...s, phone: undefined }))
+                      }}
+                      className={`input-standard ${errors.phone ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
                       placeholder="Ví dụ: 090..."
                     />
+                    {errors.phone && (
+                      <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{errors.phone}</div>
+                    )}
                   </div>
                   <div>
                     <label className="label-standard">Thanh toán</label>
@@ -335,7 +445,10 @@ export function Booking3DPage() {
                         <button
                           key={m.id}
                           type="button"
-                          onClick={() => setPaymentMethod(m.id as any)}
+                          onClick={() => {
+                            setPaymentMethod(m.id as any)
+                            setPayErrors({})
+                          }}
                           className={`rounded-xl border px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-all ${
                             paymentMethod === m.id
                               ? 'bg-primary/20 border-primary text-primary'
@@ -353,7 +466,140 @@ export function Booking3DPage() {
                           ? 'Chuyển khoản theo hướng dẫn sau khi đặt. Nhân viên sẽ xác nhận.'
                           : 'Quẹt thẻ tại quầy khi đến sân.'}
                     </div>
+                    {paymentMethod !== 'CASH' && (
+                      <button type="button" className="btn-secondary w-full !py-3 !text-[10px] mt-3" onClick={() => setPaymentOpen(true)}>
+                        Nhập thông tin thanh toán
+                      </button>
+                    )}
+                    {(paymentMethod === 'TRANSFER' && payErrors.transfer) && (
+                      <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{payErrors.transfer}</div>
+                    )}
                   </div>
+                  {paymentOpen && paymentMethod !== 'CASH' && (
+                    <div className="fixed inset-0 z-[350] flex items-center justify-center p-6">
+                      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setPaymentOpen(false)} />
+                      <div className="relative glass-dark w-full max-w-xl rounded-[28px] border border-white/10 p-8 shadow-2xl">
+                        <div className="flex items-start justify-between gap-4 mb-6">
+                          <div>
+                            <div className="text-primary text-[10px] font-bold uppercase tracking-widest">Payment</div>
+                            <h2 className="text-white text-xl font-bold tracking-tight uppercase">
+                              {paymentMethod === 'TRANSFER' ? 'Chuyển khoản' : 'Thẻ'}
+                            </h2>
+                          </div>
+                          <button type="button" className="btn-secondary !px-3 !py-2 !text-[10px]" onClick={() => setPaymentOpen(false)}>
+                            Đóng
+                          </button>
+                        </div>
+
+                        {paymentMethod === 'TRANSFER' && (
+                          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                            <div className="md:col-span-5">
+                              <div className="text-muted text-[10px] font-bold uppercase tracking-widest">Quét mã</div>
+                              <div className="mt-3 w-full aspect-square rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+                                <img src={transferQrSrc} alt="QR chuyển khoản" className="w-full h-full object-cover" />
+                              </div>
+                            </div>
+                            <div className="md:col-span-7 space-y-4">
+                              <div className="text-white font-bold">Thông tin</div>
+                              <div className="space-y-3 text-[11px]">
+                                <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3">
+                                  <div className="text-muted font-bold uppercase tracking-widest text-[10px]">Ngân hàng</div>
+                                  <div className="text-white font-bold">{transferBankName}</div>
+                                </div>
+                                <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3">
+                                  <div className="text-muted font-bold uppercase tracking-widest text-[10px]">STK</div>
+                                  <div className="text-white font-mono font-bold">{transferAccount}</div>
+                                </div>
+                              </div>
+                              <label className="inline-flex items-center gap-3 text-[11px] font-semibold text-white pt-2">
+                                <input
+                                  type="checkbox"
+                                  checked={transferConfirmed}
+                                  onChange={(e) => {
+                                    setTransferConfirmed(e.target.checked)
+                                    if (payErrors.transfer) setPayErrors((s) => ({ ...s, transfer: undefined }))
+                                  }}
+                                  className="w-4 h-4 rounded border border-white/20 bg-white/5"
+                                />
+                                Tôi đã chuyển khoản
+                              </label>
+                              {payErrors.transfer && (
+                                <div className="text-red-400 text-[10px] font-bold uppercase tracking-widest">{payErrors.transfer}</div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {paymentMethod === 'CARD' && (
+                          <div className="space-y-4">
+                            <div>
+                              <label className="label-standard">Số thẻ</label>
+                              <input
+                                value={card.number}
+                                onChange={(e) => {
+                                  setCard((s) => ({ ...s, number: e.target.value }))
+                                  if (payErrors.cardNumber) setPayErrors((s) => ({ ...s, cardNumber: undefined }))
+                                }}
+                                className={`input-standard ${payErrors.cardNumber ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
+                                placeholder="1234 5678 9012 3456"
+                                inputMode="numeric"
+                              />
+                              {payErrors.cardNumber && <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{payErrors.cardNumber}</div>}
+                            </div>
+                            <div>
+                              <label className="label-standard">Tên trên thẻ</label>
+                              <input
+                                value={card.name}
+                                onChange={(e) => {
+                                  setCard((s) => ({ ...s, name: e.target.value }))
+                                  if (payErrors.cardName) setPayErrors((s) => ({ ...s, cardName: undefined }))
+                                }}
+                                className={`input-standard ${payErrors.cardName ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
+                                placeholder="NGUYEN VAN A"
+                              />
+                              {payErrors.cardName && <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{payErrors.cardName}</div>}
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="label-standard">Hạn thẻ (MM/YY)</label>
+                                <input
+                                  value={card.expiry}
+                                  onChange={(e) => {
+                                    setCard((s) => ({ ...s, expiry: e.target.value }))
+                                    if (payErrors.cardExpiry) setPayErrors((s) => ({ ...s, cardExpiry: undefined }))
+                                  }}
+                                  className={`input-standard ${payErrors.cardExpiry ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
+                                  placeholder="MM/YY"
+                                  inputMode="numeric"
+                                />
+                                {payErrors.cardExpiry && <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{payErrors.cardExpiry}</div>}
+                              </div>
+                              <div>
+                                <label className="label-standard">CVC</label>
+                                <input
+                                  value={card.cvc}
+                                  onChange={(e) => {
+                                    setCard((s) => ({ ...s, cvc: e.target.value }))
+                                    if (payErrors.cardCvc) setPayErrors((s) => ({ ...s, cardCvc: undefined }))
+                                  }}
+                                  className={`input-standard ${payErrors.cardCvc ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
+                                  placeholder="123"
+                                  inputMode="numeric"
+                                />
+                                {payErrors.cardCvc && <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{payErrors.cardCvc}</div>}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="mt-6 flex justify-end gap-3">
+                          <button type="button" className="btn-primary" onClick={() => setPaymentOpen(false)}>
+                            Xong
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <label className="label-standard">Ghi chú</label>
                     <textarea
@@ -396,26 +642,51 @@ export function Booking3DPage() {
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.99 }}
                         className="btn-primary col-span-2 disabled:opacity-30 disabled:grayscale"
-                        disabled={!selectedSlot || !phone.trim() || currentStep !== 'CONFIRM'}
+                        disabled={!selectedSlot || currentStep !== 'CONFIRM'}
                         onClick={async () => {
                           if (!selectedCourt || !selectedSlot) return
+                          const next: { fullName?: string; phone?: string } = {}
+                          const name = fullName.trim()
+                          const phoneRaw = phone.trim()
+                          const phoneNorm = normalizePhone(phoneRaw)
+                          if (!name) next.fullName = 'Vui lòng nhập họ tên'
+                          if (!phoneNorm) next.phone = 'Vui lòng nhập số điện thoại'
+                          else if (phoneNorm.length < 9 || phoneNorm.length > 11) next.phone = 'Số điện thoại không hợp lệ'
+                          setErrors(next)
+                          const payNext: { transfer?: string; cardNumber?: string; cardName?: string; cardExpiry?: string; cardCvc?: string } = {}
+                          if (paymentMethod === 'TRANSFER') {
+                            if (!transferConfirmed) payNext.transfer = 'Vui lòng xác nhận đã chuyển khoản'
+                          }
+                          if (paymentMethod === 'CARD') {
+                            if (!luhnOk(card.number)) payNext.cardNumber = 'Số thẻ không hợp lệ'
+                            if (!card.name.trim()) payNext.cardName = 'Vui lòng nhập tên trên thẻ'
+                            if (!expiryOk(card.expiry)) payNext.cardExpiry = 'Hạn thẻ không hợp lệ (MM/YY)'
+                            const cvc = digitsOnly(card.cvc)
+                            if (cvc.length < 3 || cvc.length > 4) payNext.cardCvc = 'CVC không hợp lệ'
+                          }
+                          setPayErrors(payNext)
+                          if (Object.keys(next).length > 0 || Object.keys(payNext).length > 0) return
                           try {
                             const id = await createBooking({
                               courtId: selectedCourt.id,
                               courtName: selectedCourt.name,
                               slotId: selectedSlot.id,
                               slotTime: selectedSlot.time,
-                              fullName: fullName.trim(),
-                              phone: phone.trim(),
+                              fullName: name,
+                              phone: phoneNorm,
                               note: note.trim(),
                               totalPrice: selectedSlot.price,
                               paymentMethod,
                             })
                             setDoneId(id)
+                            setNotification({ message: `Đặt sân thành công • Mã ${id.slice(0, 8).toUpperCase()}`, type: 'success' })
                             setTimeout(() => {
                               selectCourt(null)
                               setSelectedSlot(null)
                               setStep('EXPLORE')
+                              setTransferConfirmed(false)
+                              setCard({ number: '', name: '', expiry: '', cvc: '' })
+                              setPayErrors({})
                             }, 1500)
                           } catch (err: any) {
                             setNotification({ message: err.message || 'Lỗi đặt sân', type: 'error' })
@@ -427,15 +698,6 @@ export function Booking3DPage() {
                     </div>
                   )}
                   
-                  {doneId && (
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="bg-primary/20 border border-primary/30 text-primary text-[11px] font-bold uppercase tracking-widest rounded-xl py-4 text-center mt-2 animate-pulse-slow"
-                    >
-                      ✓ Đặt sân thành công
-                    </motion.div>
-                  )}
                 </div>
             </div>
           </motion.div>

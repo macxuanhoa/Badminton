@@ -7,6 +7,7 @@ export const QROrder3D: React.FC = () => {
   const products = useStore((s) => s.products);
   const createOrder = useStore((s) => s.createOrder);
   const user = useStore((s) => s.user);
+  const setNotification = useStore((s) => s.setNotification)
   const [isOpen, setIsOpen] = useState(false);
   const [cart, setCart] = useState<{ productId: string, name: string, price: number, quantity: number }[]>([]);
 
@@ -22,21 +23,20 @@ export const QROrder3D: React.FC = () => {
 
   const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
-  const handleOrder = () => {
+  const handleOrder = async () => {
     if (cart.length === 0) return;
     try {
-      createOrder({
-        fullName: user?.name || 'Khách Hub',
-        phone: '0900000000',
-        note: 'Order từ Cafe Hub QR',
+      await createOrder({
+        guestName: user?.name || 'Khách Hub',
+        guestPhone: '0900000000',
         items: cart,
         total,
-        tableNumber: 'CAFE-01'
-      });
+      })
       setCart([]);
       setIsOpen(false);
+      setNotification({ message: 'Đã gửi order', type: 'success' })
     } catch (err: any) {
-      alert(err.message);
+      setNotification({ message: err.message || 'Lỗi gửi order', type: 'error' })
     }
   };
 

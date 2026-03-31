@@ -9,12 +9,14 @@ import { Role } from '../auth/types/role.enum';
 export class BookingsController {
   constructor(private bookingsService: BookingsService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Post()
   async create(@Request() req, @Body() body: any) {
-    const isManual = req.user.role === Role.ADMIN || req.user.role === Role.STAFF;
+    // If no JWT (handled by making JwtAuthGuard optional or removing it for this route)
+    const userId = req.user?.userId || null;
+    const isManual = req.user?.role === Role.ADMIN || req.user?.role === Role.STAFF;
+    
     return this.bookingsService.createBooking(
-      req.user.userId,
+      userId,
       body.courtId,
       body.slotId,
       isManual,

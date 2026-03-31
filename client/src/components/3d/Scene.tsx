@@ -49,7 +49,7 @@ export const Scene: React.FC = () => {
     <Canvas
       shadows
       camera={{ position: [0, 30, 38], fov: 62, near: 0.1, far: 500 }}
-      style={{ minHeight: '100vh', background: '#010409' }}
+      style={{ height: '100vh', background: '#010409' }}
       gl={{ antialias: true }}
       dpr={[1, 2]}
       onPointerMove={handlePointerMove}
