@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String?
+  role          String    @default("USER") // USER, STAFF, ADMIN
+  walletBalance Float     @default(0)
+  membership    String    @default("BASIC")
+  points        Int       @default(0)
+  skillLevel    String?
+  bookings      Booking[]
+  orders        Order[]
+  lockers       Locker[]
+  createdAt     DateTime  @default(now())
+}
+
+model Court {
+  id       String      @id @default(uuid())
+  name     String
+  type     String      @default("BADMINTON") // BADMINTON, PICKLEBALL, TENNIS
+  position String?     // "[x, y, z]"
+  status   String      @default("AVAILABLE") // AVAILABLE, BOOKED, MAINTENANCE
+  price    Float
+  bookings Booking[]
+}
+
+model Slot {
+  id    String @id @default(uuid())
+  time  String // "05:00 - 06:00"
+  price Float
+}
+
+model Booking {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  courtId       String
+  court         Court    @relation(fields: [courtId], references: [id])
+  slotId        String
+  slotTime      String?
+  fullName      String?
+  phone         String?
+  note          String?
+  paymentMethod String?  @default("CASH")
+  totalPrice    Float
+  status        String   @default("CONFIRMED") // CONFIRMED, CANCELLED, COMPLETED
+  createdAt     DateTime @default(now())
+}
+
+model Order {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  items      String   // JSON string of items
+  total      Float
+  status     String   @default("PENDING") // PENDING, DELIVERED
+  createdAt  DateTime @default(now())
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  category    String
+  price       Float
+  stock       Int      @default(0)
+  description String?
+  tag         String?  // HOT, NEW, BEST_SELLER
+  image       String?  // Emoji or URL
+  status      String   @default("ACTIVE") // ACTIVE, HIDDEN, OUT_OF_STOCK
+  createdAt   DateTime @default(now())
+}
+
+model Locker {
+  id     String @id @default(uuid())
+  number String @unique
+  status String @default("AVAILABLE") // AVAILABLE, OCCUPIED
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+}
