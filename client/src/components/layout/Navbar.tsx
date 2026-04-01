@@ -8,18 +8,29 @@ export function Navbar() {
   const theme = useStore((s) => s.theme)
   const toggleTheme = useStore((s) => s.toggleTheme)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    if (!menuOpen) return
     const onMouseDown = (e: MouseEvent) => {
-      const el = menuRef.current
-      if (!el) return
       if (!(e.target instanceof Node)) return
-      if (!el.contains(e.target)) setMenuOpen(false)
+      if (menuOpen && menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false)
+      }
+      if (mobileMenuOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
+        // Prevent closing when clicking the toggle button
+        const isToggleButton = (e.target as HTMLElement).closest('[data-mobile-toggle]')
+        if (!isToggleButton) {
+          setMobileMenuOpen(false)
+        }
+      }
     }
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMenuOpen(false)
+      if (e.key === 'Escape') {
+        setMenuOpen(false)
+        setMobileMenuOpen(false)
+      }
     }
     window.addEventListener('mousedown', onMouseDown)
     window.addEventListener('keydown', onKeyDown)
@@ -27,7 +38,7 @@ export function Navbar() {
       window.removeEventListener('mousedown', onMouseDown)
       window.removeEventListener('keydown', onKeyDown)
     }
-  }, [menuOpen])
+  }, [menuOpen, mobileMenuOpen])
   
   const base = 'px-3 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all duration-200 relative'
   const active = 'text-primary bg-primary/5'
@@ -43,28 +54,30 @@ export function Navbar() {
           <span className="hidden sm:inline uppercase tracking-tight text-base font-black">ELYRA <span className="text-primary font-medium">HUB</span></span>
         </NavLink>
         <nav className="flex items-center gap-1.5">
-          {[
-            { to: '/', label: 'Trang Chủ' },
-            { to: '/booking', label: 'Đặt Sân' },
-            { to: '/shop', label: 'Cửa Hàng' },
-            { to: '/knowledge', label: 'Kiến Thức' },
-          ].map((link) => (
-            <NavLink 
-              key={link.to}
-              to={link.to} 
-              className={({ isActive }) => `
-                ${base} ${isActive ? active : inactive}
-              `}
-            >
-              {link.label}
-            </NavLink>
-          ))}
+          <div className="hidden md:flex items-center gap-1.5">
+            {[
+              { to: '/', label: 'Trang Chủ' },
+              { to: '/booking', label: 'Đặt Sân' },
+              { to: '/shop', label: 'Cửa Hàng' },
+              { to: '/knowledge', label: 'Kiến Thức' },
+            ].map((link) => (
+              <NavLink 
+                key={link.to}
+                to={link.to} 
+                className={({ isActive }) => `
+                  ${base} ${isActive ? active : inactive}
+                `}
+              >
+                {link.label}
+              </NavLink>
+            ))}
+          </div>
           
           <div className="ml-3 pl-3 border-l border-white/10 flex items-center gap-3">
             <button
               type="button"
               onClick={toggleTheme}
-              className="px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-app hover:bg-white/10 transition-all"
+              className="px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-app hover:bg-white/10 transition-all hidden sm:block"
             >
               {theme === 'light' ? 'Dark' : 'Light'}
             </button>
@@ -132,6 +145,51 @@ export function Navbar() {
                 ĐĂNG NHẬP
               </Link>
             )}
+
+            <div className="md:hidden relative" ref={mobileMenuRef}>
+              <button
+                type="button"
+                data-mobile-toggle="true"
+                onClick={() => setMobileMenuOpen((v) => !v)}
+                className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-slate-400 hover:text-white transition-all border border-white/10"
+                aria-label="Mobile Menu"
+              >
+                <span className="text-[12px] leading-none">☰</span>
+              </button>
+              {mobileMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 glass rounded-2xl border border-white/10 p-2 shadow-2xl">
+                  {[
+                    { to: '/', label: 'Trang Chủ' },
+                    { to: '/booking', label: 'Đặt Sân' },
+                    { to: '/shop', label: 'Cửa Hàng' },
+                    { to: '/knowledge', label: 'Kiến Thức' },
+                  ].map((link) => (
+                    <NavLink
+                      key={link.to}
+                      to={link.to}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) => `
+                        block w-full text-left px-3 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest mb-1
+                        ${isActive ? 'text-primary bg-primary/10' : 'text-gray-300 hover:bg-white/5'}
+                      `}
+                    >
+                      {link.label}
+                    </NavLink>
+                  ))}
+                  <div className="h-px bg-white/10 my-2 mx-1" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      toggleTheme()
+                      setMobileMenuOpen(false)
+                    }}
+                    className="w-full text-left px-3 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest text-gray-300 hover:bg-white/5"
+                  >
+                    Giao diện: {theme === 'light' ? 'Tối' : 'Sáng'}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </nav>
       </div>

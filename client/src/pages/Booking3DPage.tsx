@@ -150,38 +150,49 @@ export function Booking3DPage() {
       )}
       <Scene />
 
-      <div className="absolute top-6 left-6 right-6 z-[260] pointer-events-auto">
-        <div className="grid grid-cols-3 items-center gap-4">
-          <div className="flex items-center gap-3">
+      <div className="absolute top-4 md:top-6 left-4 md:left-6 right-4 md:right-6 z-[260] pointer-events-auto">
+        <div className="flex flex-col md:grid md:grid-cols-3 items-center gap-3 md:gap-4">
+          <div className="flex w-full md:w-auto justify-between md:justify-start items-center gap-3">
             <Link
               to="/booking"
-              className="group relative px-5 py-3 rounded-2xl bg-[#0f172a] hover:bg-[#1e293b] text-white font-bold uppercase tracking-widest overflow-hidden transition-all border border-white/10 text-[11px] shadow-2xl backdrop-blur-md flex items-center gap-3"
+              className="group relative px-4 md:px-5 py-2 md:py-3 rounded-2xl bg-[#0f172a] hover:bg-[#1e293b] text-white font-bold uppercase tracking-widest overflow-hidden transition-all border border-white/10 text-[10px] md:text-[11px] shadow-2xl backdrop-blur-md flex items-center gap-2 md:gap-3"
             >
               <span>←</span>
-              <span>2D Mode</span>
+              <span className="hidden sm:inline">2D Mode</span>
+              <span className="sm:hidden">2D</span>
             </Link>
-            <div className="bg-[#020617] px-5 py-3 rounded-2xl border border-white/5 shadow-2xl flex items-center gap-3 backdrop-blur-md">
+            <div className="bg-[#020617] px-4 md:px-5 py-2 md:py-3 rounded-2xl border border-white/5 shadow-2xl flex items-center gap-2 md:gap-3 backdrop-blur-md">
               <span className="w-2 h-2 rounded-full bg-primary shadow-lg shadow-primary-glow/40 animate-pulse" />
-              <span className="text-primary font-black uppercase tracking-widest text-[11px]">3D Interactive</span>
-              <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">({usersOnline} Live)</span>
+              <span className="text-primary font-black uppercase tracking-widest text-[10px] md:text-[11px]">3D Hub</span>
+              <span className="text-gray-500 text-[9px] md:text-[10px] font-bold uppercase tracking-widest hidden sm:inline">({usersOnline} Live)</span>
+            </div>
+            
+            <div className="flex md:hidden items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border glass border-white/10 text-gray-300 hover:bg-white/5"
+              >
+                {theme === 'light' ? 'Dark' : 'Light'}
+              </button>
             </div>
           </div>
 
-          <div className="flex justify-center items-center gap-4">
-            <div className="bg-[#020617] px-4 py-3 rounded-2xl border border-white/5 flex items-center gap-4 backdrop-blur-md shadow-2xl">
+          <div className="flex w-full md:w-auto justify-center items-center gap-2 md:gap-4 overflow-x-auto custom-scrollbar pb-1 md:pb-0">
+            <div className="bg-[#020617] px-3 md:px-4 py-2 md:py-3 rounded-2xl border border-white/5 flex items-center gap-2 md:gap-4 backdrop-blur-md shadow-2xl shrink-0">
               {['Khám phá', 'Chọn sân', 'Chọn giờ', 'Xác nhận'].map((label, i) => (
-                <div key={label} className="flex items-center gap-2">
+                <div key={label} className="flex items-center gap-1.5 md:gap-2">
                   <div
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    className={`w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-[9px] md:text-[10px] font-bold ${
                       i === stepIndex ? 'bg-primary text-surface' : 'bg-white/10 text-gray-500'
                     }`}
                   >
                     {i + 1}
                   </div>
-                  <span className={`text-[10px] font-bold uppercase tracking-widest ${i === stepIndex ? 'text-white' : 'text-gray-600'}`}>
+                  <span className={`text-[9px] md:text-[10px] font-bold uppercase tracking-widest hidden sm:inline ${i === stepIndex ? 'text-white' : 'text-gray-600'}`}>
                     {label}
                   </span>
-                  {i < 3 && <div className="w-4 h-px bg-white/10" />}
+                  {i < 3 && <div className="w-2 md:w-4 h-px bg-white/10" />}
                 </div>
               ))}
             </div>
@@ -190,12 +201,12 @@ export function Booking3DPage() {
               type="date" 
               value={selectedDate} 
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-[#020617] border border-white/10 text-white rounded-2xl px-4 py-3 text-[11px] font-bold focus:outline-none focus:border-primary/50 shadow-2xl backdrop-blur-md"
+              className="bg-[#020617] border border-white/10 text-white rounded-2xl px-3 md:px-4 py-2 md:py-3 text-[10px] md:text-[11px] font-bold focus:outline-none focus:border-primary/50 shadow-2xl backdrop-blur-md shrink-0"
               min={new Date().toISOString().split('T')[0]}
             />
           </div>
 
-          <div className="flex justify-end items-center gap-2">
+          <div className="hidden md:flex justify-end items-center gap-2">
             <button
               type="button"
               onClick={toggleTheme}
@@ -220,7 +231,7 @@ export function Booking3DPage() {
       </div>
 
       {/* Mini Map */}
-      <div className="absolute bottom-8 left-8 z-[250] pointer-events-auto">
+      <div className="absolute bottom-8 left-8 z-[250] pointer-events-auto hidden md:block">
         <div className="glass p-5 rounded-3xl w-44 h-60 relative overflow-hidden border-white/5">
           <div className="text-[10px] font-bold uppercase text-gray-500 absolute top-3 left-5 tracking-widest opacity-60">
             Facility Map
@@ -382,13 +393,13 @@ export function Booking3DPage() {
       <AnimatePresence>
         {selectedCourt && currentStep !== 'EXPLORE' && (
           <motion.div 
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 40 }}
-            className="sticky top-24 self-start ml-auto mr-8 w-[400px] max-w-[calc(100vw-64px)] z-[260] pointer-events-auto overflow-y-auto custom-scrollbar"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            className="absolute md:sticky bottom-0 md:top-24 md:bottom-auto left-0 md:left-auto md:ml-auto right-0 md:mr-8 w-full md:w-[400px] max-w-full md:max-w-[calc(100vw-64px)] max-h-[80vh] md:max-h-none z-[260] pointer-events-auto overflow-y-auto custom-scrollbar rounded-t-3xl md:rounded-3xl"
           >
-            <div className="glass rounded-3xl p-8 border-white/5 shadow-2xl flex flex-col min-h-full">
-              <div className="flex items-start justify-between gap-4 mb-8">
+            <div className="glass p-6 md:p-8 border-white/5 shadow-2xl flex flex-col min-h-full">
+              <div className="flex items-start justify-between gap-4 mb-6 md:mb-8">
                 <div>
                   <h3 className="text-white text-2xl font-bold tracking-tight">
                     Booking <span className="text-primary italic">3D</span>
