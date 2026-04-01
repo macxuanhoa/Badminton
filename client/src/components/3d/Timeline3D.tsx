@@ -72,19 +72,23 @@ const Slot: React.FC<SlotProps> = ({ id, time, position, isLocked, price, lockId
     material.emissiveIntensity = THREE.MathUtils.lerp(material.emissiveIntensity, emissiveIntensity, delta * 5);
   });
 
+  const user = useStore((state) => state.user);
+  const tempUserId = useStore((state) => state.tempUserId);
+  const userId = user?.id || tempUserId;
+  
   const handleClick = (e: any) => {
     e.stopPropagation();
     if (isLocked) return;
 
     if (isSelected) {
       setSelectedSlot(null);
-      socketService.releaseSlot(lockId, 'user-123');
+      socketService.releaseSlot(lockId, userId);
       setStep('CHOOSE_TIME');
       return;
     }
 
     setSelectedSlot({ id: time, time, price });
-    socketService.lockSlot(lockId, 'user-123');
+    socketService.lockSlot(lockId, userId);
     setStep('CONFIRM');
   };
 
@@ -140,6 +144,8 @@ export const Timeline3D: React.FC = () => {
   const selectedCourtId = useStore((state) => state.selectedCourtId);
   const courts = useStore((state) => state.courts);
   const realtimeLocks = useStore((state) => state.realtimeLocks);
+  const bookings = useStore((state) => state.bookings);
+  const selectedDate = useStore((state) => state.selectedDate);
   const setStep = useStore((state) => state.setStep);
   const selectedSlotId = useStore((state) => state.selectedSlot?.id);
   const setSelectedSlot = useStore((state) => state.setSelectedSlot);
@@ -164,15 +170,16 @@ export const Timeline3D: React.FC = () => {
   }
 
   const court = courts.find(c => c.id === selectedCourtId);
+  const allSlots = useStore((state) => state.slots);
   if (!court) return null;
 
-  // Generate slots for the day
-  const slots = [
-    { time: '05:00 - 06:00', price: Math.round(court.price * 0.6) },
-    { time: '06:00 - 07:00', price: Math.round(court.price * 0.7) },
-    { time: '17:00 - 18:00', price: court.price },
-    { time: '18:00 - 19:00', price: Math.round(court.price * 1.2) },
-    { time: '19:00 - 20:00', price: Math.round(court.price * 1.2) },
+  // Use slots from store or fallback to default if not loaded yet
+  const displaySlots = allSlots.length > 0 ? allSlots : [
+    { id: '1', time: '05:00 - 06:00', price: Math.round(court.price * 0.6) },
+    { id: '2', time: '06:00 - 07:00', price: Math.round(court.price * 0.7) },
+    { id: '3', time: '17:00 - 18:00', price: court.price },
+    { id: '4', time: '18:00 - 19:00', price: Math.round(court.price * 1.2) },
+    { id: '5', time: '19:00 - 20:00', price: Math.round(court.price * 1.2) },
   ];
 
   // Attach timeline to the right side of the court
@@ -185,17 +192,28 @@ export const Timeline3D: React.FC = () => {
 
   return (
     <group position={[offsetX, 0, baseZ]}>
-      {slots.map((slot, index) => (
-        <Slot
-          key={`${court.id}:${slot.time}`}
-          id={`${court.id}:${slot.time}`}
-          time={slot.time}
-          price={slot.price}
-          position={[0, 0, index * 1.5]} // Layout along Z axis
-          lockId={`${court.id}:${slot.time}`}
-          isLocked={!!realtimeLocks[`${court.id}:${slot.time}`]}
-        />
-      ))}
+      {displaySlots.map((slot, index) => {
+        const lockId = `${court.id}:${selectedDate}:${slot.time}`;
+        const isBooked = bookings.some(b => 
+          b.courtId === court.id && 
+          b.slotTime === slot.time && 
+          b.date === selectedDate &&
+          b.status !== 'CANCELLED'
+        );
+        const isLocked = isBooked || !!realtimeLocks[lockId];
+
+        return (
+          <Slot
+            key={lockId}
+            id={lockId}
+            time={slot.time}
+            price={slot.price}
+            position={[0, 0, index * 1.5]} // Layout along Z axis
+            lockId={lockId}
+            isLocked={isLocked}
+          />
+        );
+      })}
       
       {/* Timeline Base/Track */}
       <mesh position={[0, -0.05, 3]} receiveShadow>

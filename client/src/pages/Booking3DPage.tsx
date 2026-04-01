@@ -10,25 +10,29 @@ export function Booking3DPage() {
   const courts = useStore((s) => s.courts)
   const selectedCourtId = useStore((s) => s.selectedCourtId)
   const selectedSlot = useStore((s) => s.selectedSlot)
+  const selectedDate = useStore((s) => s.selectedDate)
+  const setSelectedDate = useStore((s) => s.setSelectedDate)
   const viewMode = useStore((s) => s.viewMode)
   const setViewMode = useStore((s) => s.setViewMode)
   const setStep = useStore((s) => s.setStep)
   const selectCourt = useStore((s) => s.selectCourt)
   const setSelectedSlot = useStore((s) => s.setSelectedSlot)
   const createBooking = useStore((s) => s.createBooking)
+  const fetchBookings = useStore((s) => s.fetchBookings)
   const updatePresence = useStore(s => s.updatePresence)
   const usersOnline = useStore(s => s.usersOnline)
+  const [webglError, setWebglError] = useState<string | null>(null)
 
-  // Simulation of other users (Race Condition / Concurrency feel)
   useEffect(() => {
-    const users = ['user-1', 'user-2', 'user-3']
-    const interval = setInterval(() => {
-      const u = users[Math.floor(Math.random() * users.length)]
-      const pos: [number, number, number] = [(Math.random() - 0.5) * 60, 1.7, Math.random() * 140]
-      updatePresence(u, Math.random() > 0.3 ? pos : null)
-    }, 4000)
-    return () => clearInterval(interval)
-  }, [updatePresence])
+    // Check for WebGL support
+    const canvas = document.createElement('canvas')
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
+    if (!gl) {
+      setWebglError('Trình duyệt của bạn không hỗ trợ WebGL. Vui lòng sử dụng bản 2D hoặc cập nhật trình duyệt.')
+    }
+    
+    fetchBookings()
+  }, [fetchBookings])
 
   const selectedCourt = useMemo(() => courts.find((c) => c.id === selectedCourtId) || null, [courts, selectedCourtId])
   const user = useStore((s) => s.user)
@@ -134,61 +138,85 @@ export function Booking3DPage() {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#020617]">
+      {webglError && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/90 p-8 text-center">
+          <div className="max-w-md space-y-6">
+            <div className="text-4xl">⚠️</div>
+            <h2 className="text-white text-xl font-bold uppercase tracking-widest">Lỗi đồ họa</h2>
+            <p className="text-gray-400 text-sm leading-relaxed">{webglError}</p>
+            <Link to="/booking" className="btn-primary inline-block">Chuyển sang bản 2D</Link>
+          </div>
+        </div>
+      )}
       <Scene />
 
-      <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[260] pointer-events-auto">
-        <div className="flex items-center gap-4 bg-white/5 p-2 rounded-2xl border border-white/5">
-          {['Khám phá', 'Chọn sân', 'Chọn giờ', 'Xác nhận'].map((label, i) => (
-            <div key={label} className="flex items-center gap-2">
-              <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  i === stepIndex ? 'bg-primary text-surface' : 'bg-white/10 text-gray-500'
-                }`}
-              >
-                {i + 1}
-              </div>
-              <span className={`text-[10px] font-bold uppercase tracking-widest ${i === stepIndex ? 'text-white' : 'text-gray-600'}`}>
-                {label}
-              </span>
-              {i < 3 && <div className="w-4 h-px bg-white/10" />}
+      <div className="absolute top-6 left-6 right-6 z-[260] pointer-events-auto">
+        <div className="grid grid-cols-3 items-center gap-4">
+          <div className="flex items-center gap-3">
+            <Link
+              to="/booking"
+              className="group relative px-5 py-3 rounded-2xl bg-[#0f172a] hover:bg-[#1e293b] text-white font-bold uppercase tracking-widest overflow-hidden transition-all border border-white/10 text-[11px] shadow-2xl backdrop-blur-md flex items-center gap-3"
+            >
+              <span>←</span>
+              <span>2D Mode</span>
+            </Link>
+            <div className="bg-[#020617] px-5 py-3 rounded-2xl border border-white/5 shadow-2xl flex items-center gap-3 backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-primary shadow-lg shadow-primary-glow/40 animate-pulse" />
+              <span className="text-primary font-black uppercase tracking-widest text-[11px]">3D Interactive</span>
+              <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">({usersOnline} Live)</span>
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* View Mode Toggles */}
-      <div className="absolute top-24 right-8 z-[250] flex flex-col gap-2">
-        <button
-          type="button"
-          onClick={toggleTheme}
-          className="px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border glass border-white/10 text-gray-300 hover:bg-white/5"
-        >
-          {theme === 'light' ? 'Dark' : 'Light'}
-        </button>
-        {user && (
-          <button
-            type="button"
-            onClick={() => {
-              logout()
-              setNotification({ message: 'Đã đăng xuất', type: 'success' })
-            }}
-            className="px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border glass border-white/10 text-gray-300 hover:bg-white/5"
-          >
-            Đăng xuất
-          </button>
-        )}
-        <button 
-          onClick={() => setViewMode('OVERVIEW')}
-          className={`px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border ${viewMode === 'OVERVIEW' ? 'bg-primary border-primary text-surface shadow-lg shadow-primary-glow' : 'glass border-white/10 text-gray-400 hover:bg-white/5'}`}
-        >
-          Overview
-        </button>
-        <button 
-          onClick={() => setViewMode('HUMAN')}
-          className={`px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border ${viewMode === 'HUMAN' ? 'bg-primary border-primary text-surface shadow-lg shadow-primary-glow' : 'glass border-white/10 text-gray-400 hover:bg-white/5'}`}
-        >
-          Walkthrough
-        </button>
+          <div className="flex justify-center items-center gap-4">
+            <div className="bg-[#020617] px-4 py-3 rounded-2xl border border-white/5 flex items-center gap-4 backdrop-blur-md shadow-2xl">
+              {['Khám phá', 'Chọn sân', 'Chọn giờ', 'Xác nhận'].map((label, i) => (
+                <div key={label} className="flex items-center gap-2">
+                  <div
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                      i === stepIndex ? 'bg-primary text-surface' : 'bg-white/10 text-gray-500'
+                    }`}
+                  >
+                    {i + 1}
+                  </div>
+                  <span className={`text-[10px] font-bold uppercase tracking-widest ${i === stepIndex ? 'text-white' : 'text-gray-600'}`}>
+                    {label}
+                  </span>
+                  {i < 3 && <div className="w-4 h-px bg-white/10" />}
+                </div>
+              ))}
+            </div>
+            
+            <input 
+              type="date" 
+              value={selectedDate} 
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-[#020617] border border-white/10 text-white rounded-2xl px-4 py-3 text-[11px] font-bold focus:outline-none focus:border-primary/50 shadow-2xl backdrop-blur-md"
+              min={new Date().toISOString().split('T')[0]}
+            />
+          </div>
+
+          <div className="flex justify-end items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border glass border-white/10 text-gray-300 hover:bg-white/5"
+            >
+              {theme === 'light' ? 'Dark' : 'Light'}
+            </button>
+            {user && (
+              <button
+                type="button"
+                onClick={() => {
+                  logout()
+                  setNotification({ message: 'Đã đăng xuất', type: 'success' })
+                }}
+                className="px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border glass border-white/10 text-gray-300 hover:bg-white/5"
+              >
+                Đăng xuất
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Mini Map */}
@@ -348,16 +376,6 @@ export function Booking3DPage() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="absolute top-24 left-8 z-[250] pointer-events-auto flex items-center gap-3">
-        <Link to="/booking" className="glass px-5 py-3 rounded-xl text-white font-bold hover:bg-white/10 transition-all border-white/5 flex items-center gap-2 text-xs tracking-wider uppercase">
-          <span>←</span> 2D MODE
-        </Link>
-        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary glass px-4 py-3 rounded-xl border-primary/20 bg-primary/5 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          3D Interactive {usersOnline > 1 && <span className="text-white/40 ml-1">({usersOnline} Live)</span>}
         </div>
       </div>
 
@@ -649,9 +667,13 @@ export function Booking3DPage() {
                           const name = fullName.trim()
                           const phoneRaw = phone.trim()
                           const phoneNorm = normalizePhone(phoneRaw)
+                          
                           if (!name) next.fullName = 'Vui lòng nhập họ tên'
+                          else if (name.length < 2) next.fullName = 'Họ tên quá ngắn'
+                          
                           if (!phoneNorm) next.phone = 'Vui lòng nhập số điện thoại'
-                          else if (phoneNorm.length < 9 || phoneNorm.length > 11) next.phone = 'Số điện thoại không hợp lệ'
+                          else if (phoneNorm.length < 9 || phoneNorm.length > 11 || !phoneNorm.startsWith('0')) next.phone = 'Số điện thoại không hợp lệ (9-11 số, bắt đầu bằng 0)'
+                          
                           setErrors(next)
                           const payNext: { transfer?: string; cardNumber?: string; cardName?: string; cardExpiry?: string; cardCvc?: string } = {}
                           if (paymentMethod === 'TRANSFER') {
@@ -672,11 +694,13 @@ export function Booking3DPage() {
                               courtName: selectedCourt.name,
                               slotId: selectedSlot.id,
                               slotTime: selectedSlot.time,
+                              date: selectedDate,
                               fullName: name,
                               phone: phoneNorm,
                               note: note.trim(),
                               totalPrice: selectedSlot.price,
                               paymentMethod,
+                              userId: user?.id || null,
                             })
                             setDoneId(id)
                             setNotification({ message: `Đặt sân thành công • Mã ${id.slice(0, 8).toUpperCase()}`, type: 'success' })

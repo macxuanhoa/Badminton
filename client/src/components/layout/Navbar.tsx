@@ -94,13 +94,16 @@ export function Navbar() {
                           <div className="text-primary text-[9px] font-bold">{user.walletBalance.toLocaleString()}đ</div>
                         </div>
                       </div>
-                      <Link
-                        to="/profile"
-                        onClick={() => setMenuOpen(false)}
-                        className="block px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest text-gray-300 hover:bg-white/5"
-                      >
-                        Hồ sơ
-                      </Link>
+                      <div className="h-px bg-white/10 my-1 mx-2" />
+                      {user.role === 'USER' && (
+                        <Link
+                          to="/profile"
+                          onClick={() => setMenuOpen(false)}
+                          className="block px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest text-gray-300 hover:bg-white/5"
+                        >
+                          Hồ sơ
+                        </Link>
+                      )}
                       {(user.role === 'ADMIN' || user.role === 'STAFF') && (
                         <Link
                           to="/admin"

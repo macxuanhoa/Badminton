@@ -205,8 +205,8 @@ export const Court: React.FC<CourtProps> = ({ id }) => {
       </mesh>
 
       {/* Outer Bounds Area (The floor around the court) */}
-      <mesh position={[0, -0.05, 0]} receiveShadow>
-        <boxGeometry args={[outerWidth, 0.1, outerLength]} />
+      <mesh position={[0, 0.01, 0]}>
+        <boxGeometry args={[outerWidth, 0.02, outerLength]} />
         <primitive object={materials.outOfBounds} attach="material" />
         {(status === 'SELECTED' || status === 'HOVER') && (
           <Edges scale={1.02} threshold={15} color={status === 'SELECTED' ? '#ffffff' : '#cbd5e1'} />
@@ -214,13 +214,13 @@ export const Court: React.FC<CourtProps> = ({ id }) => {
       </mesh>
 
       {/* Main Playing Surface */}
-      <mesh ref={surfaceRef} receiveShadow position={[0, 0, 0]}>
-        <boxGeometry args={[courtWidth, 0.12, courtLength]} />
+      <mesh ref={surfaceRef} position={[0, 0.03, 0]}>
+        <boxGeometry args={[courtWidth, 0.04, courtLength]} />
         <primitive object={materials.AVAILABLE} attach="material" />
       </mesh>
 
       {/* --- COURT LINES (Based on Type) --- */}
-      <group position={[0, 0.067, 0]}>
+      <group position={[0, 0.051, 0]}>
         {/* Perimeter */}
         <mesh position={[0, 0, courtLength/2]}><boxGeometry args={[courtWidth, lineHeight, lineWidth]} /><primitive object={linesMat} attach="material" /></mesh>
         <mesh position={[0, 0, -courtLength/2]}><boxGeometry args={[courtWidth, lineHeight, lineWidth]} /><primitive object={linesMat} attach="material" /></mesh>

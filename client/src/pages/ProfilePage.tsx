@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useStore } from '../store/useStore'
 import { motion } from 'framer-motion'
 
@@ -88,6 +88,9 @@ export function ProfilePage() {
   const myBookings = bookings.filter(b => b.phone === user.phone || b.fullName === user.name)
   const myOrders = orders.filter(o => o.guestPhone === user.phone || o.guestName === user.name)
 
+  const [showTopupModal, setShowTopupModal] = useState(false)
+  const [topupAmount, setTopupAmount] = useState(100000)
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -115,13 +118,25 @@ export function ProfilePage() {
               </p>
               
               <div className="grid grid-cols-2 gap-4 mt-10">
-                <div className="glass-dark p-4 rounded-2xl border-white/5">
+                <div className="glass-dark p-4 rounded-2xl border-white/5 relative group">
                   <div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Ví Elyra</div>
                   <div className="text-white font-bold">{user.walletBalance.toLocaleString()}đ</div>
+                  <button 
+                    onClick={() => setShowTopupModal(true)}
+                    className="absolute top-2 right-2 px-2 py-1 bg-primary/20 text-primary text-[8px] font-bold rounded-lg uppercase opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    Nạp
+                  </button>
                 </div>
-                <div className="glass-dark p-4 rounded-2xl border-white/5">
+                <div className="glass-dark p-4 rounded-2xl border-white/5 relative group">
                   <div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Điểm tích lũy</div>
                   <div className="text-primary font-bold">{user.points} pts</div>
+                  <button 
+                    onClick={() => setNotification({ message: 'Tính năng đổi điểm đang được phát triển', type: 'success' })}
+                    className="absolute top-2 right-2 px-2 py-1 bg-primary/20 text-primary text-[8px] font-bold rounded-lg uppercase opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    Đổi
+                  </button>
                 </div>
               </div>
             </div>
@@ -311,6 +326,49 @@ export function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Topup Modal */}
+      {showTopupModal && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowTopupModal(false)} />
+          <div className="relative glass-dark w-full max-w-md rounded-[32px] border border-white/10 p-8 shadow-2xl">
+            <div className="flex justify-between items-center mb-8">
+               <h2 className="text-white font-bold text-xl tracking-tight uppercase">Nạp Tiền Vào Ví</h2>
+               <button onClick={() => setShowTopupModal(false)} className="text-gray-500 hover:text-white transition-all text-xl">✕</button>
+            </div>
+            <div className="space-y-6">
+              <div>
+                <label className="label-standard">Chọn số tiền</label>
+                <div className="grid grid-cols-3 gap-3">
+                  {[50000, 100000, 200000, 500000, 1000000, 2000000].map(amt => (
+                    <button
+                      key={amt}
+                      onClick={() => setTopupAmount(amt)}
+                      className={`py-3 rounded-xl text-xs font-bold border transition-all ${
+                        topupAmount === amt ? 'bg-primary/20 border-primary text-primary' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                      }`}
+                    >
+                      {amt.toLocaleString()}đ
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="pt-6 border-t border-white/5">
+                <button
+                  className="btn-primary w-full !py-4"
+                  onClick={() => {
+                    useStore.getState().updateWallet(topupAmount)
+                    setNotification({ message: `Đã nạp ${topupAmount.toLocaleString()}đ vào ví thành công!`, type: 'success' })
+                    setShowTopupModal(false)
+                  }}
+                >
+                  Xác nhận nạp {topupAmount.toLocaleString()}đ
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   )
 }

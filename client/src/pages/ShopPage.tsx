@@ -304,7 +304,7 @@ export function ShopPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                className="grid grid-cols-2 md:grid-cols-3 gap-6"
               >
                 {shownProducts.map((p) => (
                   <div key={p.id} className="glass-card group bg-white/[0.03] border border-white/5 rounded-3xl overflow-hidden flex flex-col">

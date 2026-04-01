@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -9,43 +9,44 @@ type BookingForm = {
   note: string
 }
 
-function buildSlots(basePrice: number) {
-  return [
-    { id: '05:00 - 06:00', time: '05:00 - 06:00', price: Math.round(basePrice * 0.6) },
-    { id: '06:00 - 07:00', time: '06:00 - 07:00', price: Math.round(basePrice * 0.7) },
-    { id: '17:00 - 18:00', time: '17:00 - 18:00', price: basePrice },
-    { id: '18:00 - 19:00', time: '18:00 - 19:00', price: Math.round(basePrice * 1.2) },
-    { id: '19:00 - 20:00', time: '19:00 - 20:00', price: Math.round(basePrice * 1.2) },
-  ]
-}
-
 export function BookingPage() {
   const courts = useStore((s) => s.courts)
+  const allSlots = useStore((s) => s.slots)
   const bookings = useStore((s) => s.bookings)
+  const realtimeLocks = useStore((s) => s.realtimeLocks)
   const isLoading = useStore((s) => s.isLoading)
   const selectedCourtId = useStore((s) => s.selectedCourtId)
   const selectedSlot = useStore((s) => s.selectedSlot)
+  const selectedDate = useStore((s) => s.selectedDate)
+  const setSelectedDate = useStore((s) => s.setSelectedDate)
   const selectCourt = useStore((s) => s.selectCourt)
+  const user = useStore((s) => s.user)
   const setStep = useStore((s) => s.setStep)
   const setSelectedSlot = useStore((s) => s.setSelectedSlot)
   const createBooking = useStore((s) => s.createBooking)
+  const fetchBookings = useStore((s) => s.fetchBookings)
+
+  useEffect(() => {
+    fetchBookings()
+  }, [fetchBookings])
 
   const selectedCourt = useMemo(() => courts.find((c) => c.id === selectedCourtId) || null, [courts, selectedCourtId])
   
   const slots = useMemo(() => {
     if (!selectedCourt) return []
-    const allSlots = buildSlots(selectedCourt.price)
     
-    // Filter out already booked slots for this court today
     return allSlots.map(s => {
       const isBooked = bookings.some(b => 
         b.courtId === selectedCourt.id && 
-        b.slotTime.includes(s.time) && 
+        b.slotTime === s.time && 
+        b.date === selectedDate &&
         b.status !== 'CANCELLED'
       )
-      return { ...s, isBooked }
+      const lockId = `${selectedCourt.id}:${selectedDate}:${s.time}`
+      const isLocked = isBooked || !!realtimeLocks[lockId]
+      return { ...s, isBooked: isLocked }
     })
-  }, [selectedCourt, bookings])
+  }, [selectedCourt, bookings, selectedDate, realtimeLocks, allSlots])
 
   const [form, setForm] = useState<BookingForm>({ fullName: '', phone: '', note: '' })
   const [doneId, setDoneId] = useState<string | null>(null)
@@ -103,9 +104,13 @@ export function BookingPage() {
     const name = form.fullName.trim()
     const phoneRaw = form.phone.trim()
     const phone = normalizePhone(phoneRaw)
+    
     if (!name) next.fullName = 'Vui lòng nhập họ tên'
+    else if (name.length < 2) next.fullName = 'Họ tên quá ngắn'
+    
     if (!phone) next.phone = 'Vui lòng nhập số điện thoại'
-    else if (phone.length < 9 || phone.length > 11) next.phone = 'Số điện thoại không hợp lệ'
+    else if (phone.length < 9 || phone.length > 11 || !phone.startsWith('0')) next.phone = 'Số điện thoại không hợp lệ (9-11 số, bắt đầu bằng 0)'
+    
     setErrors(next)
     const payNext: { transfer?: string; cardNumber?: string; cardName?: string; cardExpiry?: string; cardCvc?: string } = {}
     if (paymentMethod === 'TRANSFER') {
@@ -126,11 +131,13 @@ export function BookingPage() {
         courtName: selectedCourt.name,
         slotId: selectedSlot.id,
         slotTime: selectedSlot.time,
+        date: selectedDate,
         fullName: name,
         phone,
         note: form.note.trim(),
         totalPrice: selectedSlot.price,
         paymentMethod,
+        userId: user?.id || null,
       })
       setDoneId(id)
       selectCourt(null)
@@ -333,7 +340,16 @@ export function BookingPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-5">
                     <div className="space-y-3">
-                      <label className="label-standard text-[9px]">Chọn Khung Giờ</label>
+                      <div className="flex items-center justify-between">
+                        <label className="label-standard text-[9px]">Chọn Khung Giờ</label>
+                        <input 
+                          type="date" 
+                          value={selectedDate} 
+                          onChange={(e) => setSelectedDate(e.target.value)}
+                          className="bg-black/40 border border-white/10 text-white rounded-xl px-3 py-1.5 text-[10px] font-bold focus:outline-none focus:border-primary/50"
+                          min={new Date().toISOString().split('T')[0]}
+                        />
+                      </div>
                       <div className="grid grid-cols-2 gap-2">
                         {slots.map((s) => {
                           const isSelected = selectedSlot?.id === s.id

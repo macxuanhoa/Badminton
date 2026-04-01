@@ -222,16 +222,60 @@ export function AdminProductsPage() {
                   <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{errors.minStock}</div>
                 )}
               </div>
-              <div>
-                <label className="label-standard">Icon</label>
-                <input
-                  className={`input-standard ${errors.image ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
-                  value={form.image || ''}
-                  onChange={(e) => {
-                    setForm((s) => ({ ...s, image: e.target.value }))
-                    if (errors.image) setErrors((s) => ({ ...s, image: undefined }))
-                  }}
-                />
+              <div className="md:col-span-2">
+                <label className="label-standard">Hình ảnh / Biểu tượng</label>
+                <div className="flex items-center gap-4">
+                  {form.image && (
+                    <div className="w-16 h-16 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                      {form.image.startsWith('http') || form.image.startsWith('data:') ? (
+                        <img src={form.image} alt="Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-2xl">{form.image}</span>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex-1 space-y-2">
+                    <input
+                      value={form.image || ''}
+                      onChange={(e) => {
+                        setForm((s) => ({ ...s, image: e.target.value }))
+                        if (errors.image) setErrors((s) => ({ ...s, image: undefined }))
+                      }}
+                      className={`input-standard ${errors.image ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
+                      placeholder="URL ảnh hoặc Emoji (ví dụ: 🏸)"
+                    />
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          if (file.size > 2 * 1024 * 1024) {
+                            setNotification({ message: 'Ảnh tối đa 2MB', type: 'error' })
+                            return
+                          }
+                          try {
+                            const dataUrl = await new Promise<string>((resolve, reject) => {
+                              const reader = new FileReader()
+                              reader.onload = () => resolve(String(reader.result))
+                              reader.onerror = () => reject(new Error('File read error'))
+                              reader.readAsDataURL(file)
+                            })
+                            setForm(s => ({ ...s, image: dataUrl }))
+                            if (errors.image) setErrors((s) => ({ ...s, image: undefined }))
+                          } catch (err) {
+                            setNotification({ message: 'Lỗi đọc file', type: 'error' })
+                          }
+                        }}
+                      />
+                      <button type="button" className="btn-secondary w-full !py-2.5 !text-[10px]">
+                        Hoặc tải ảnh lên từ máy tính
+                      </button>
+                    </div>
+                  </div>
+                </div>
                 {errors.image && (
                   <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{errors.image}</div>
                 )}

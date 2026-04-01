@@ -194,13 +194,15 @@ export function AdminPage() {
         courtName: court.name,
         slotId: manualBooking.slotId,
         slotTime: manualBooking.slotTime,
+        date: new Date().toISOString().split('T')[0],
         fullName: manualBooking.fullName,
         phone,
         note: 'Staff Manual Booking',
         totalPrice: manualBooking.totalPrice,
         paymentMethod: 'CASH',
+        userId: null,
         isManual: true
-      })
+      } as any)
       setShowManualBooking(false)
       setManualBooking({ courtId: '', slotId: '', slotTime: '', fullName: '', phone: '', totalPrice: 0 })
       setManualBookingErrors({})

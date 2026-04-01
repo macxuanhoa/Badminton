@@ -1,6 +1,6 @@
-import React, { Suspense, useMemo } from 'react';
+import React, { Suspense, useMemo, useEffect, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { CameraControls, Environment, Float, MeshReflectorMaterial, ContactShadows } from '@react-three/drei';
+import { CameraControls, Environment, useProgress, Html } from '@react-three/drei';
 import { Lights } from './Lights';
 import { Court } from './Court';
 import { Zones3D } from './Zones3D';
@@ -8,11 +8,30 @@ import { QROrder3D } from './QROrder3D';
 import { Timeline3D } from './Timeline3D';
 import { CameraController } from './CameraController';
 import { useStore } from '../../store/useStore';
-import { EffectComposer, Bloom, Noise, Vignette, DepthOfField } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, Vignette, DepthOfField } from '@react-three/postprocessing';
 import { socketService } from '../../services/socket.service';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib';
 
 RectAreaLightUniformsLib.init();
+
+const Loader = () => {
+  const { progress } = useProgress()
+  return (
+    <Html center>
+      <div className="flex flex-col items-center justify-center space-y-4">
+        <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-primary transition-all duration-300 ease-out" 
+            style={{ width: `${progress}%` }} 
+          />
+        </div>
+        <div className="text-primary text-[10px] font-bold uppercase tracking-widest">
+          Loading 3D Environment {Math.round(progress)}%
+        </div>
+      </div>
+    </Html>
+  )
+}
 
 const PresenceLayer = () => {
   const otherUsersPresence = useStore((state) => state.otherUsersPresence);
@@ -32,22 +51,26 @@ const PresenceLayer = () => {
 
 export const Scene: React.FC = () => {
   const currentStep = useStore((state) => state.currentStep);
-  const selectedCourtId = useStore((state) => state.selectedCourtId);
   const courts = useStore((state) => state.courts);
   const controlsRef = React.useRef<any>(null);
 
+  const lastEmitRef = React.useRef(0);
+
   const handlePointerMove = (e: any) => {
     if (e.point) {
-      socketService.socket?.emit('CURSOR_MOVE', [e.point.x, e.point.y + 0.5, e.point.z]);
+      const now = Date.now();
+      // Throttle to 100ms (10fps) to prevent flooding the server
+      if (now - lastEmitRef.current > 100) {
+        socketService.socket?.emit('CURSOR_MOVE', [e.point.x, e.point.y + 0.5, e.point.z]);
+        lastEmitRef.current = now;
+      }
     }
   };
 
-  const isSelecting = currentStep !== 'EXPLORE';
   const enableDof = currentStep === 'CONFIRM';
 
   return (
     <Canvas
-      shadows
       camera={{ position: [0, 30, 38], fov: 62, near: 0.1, far: 500 }}
       style={{ height: '100vh', background: '#010409' }}
       gl={{ antialias: true }}
@@ -65,7 +88,7 @@ export const Scene: React.FC = () => {
         draggingSmoothTime={0.1}
       />
       <CameraController controlsRef={controlsRef} />
-      <Suspense fallback={null}>
+      <Suspense fallback={<Loader />}>
         <Lights />
         <PresenceLayer />
         
@@ -73,36 +96,13 @@ export const Scene: React.FC = () => {
           <Zones3D />
           <QROrder3D />
           {courts.map((court) => (
-            <Float speed={isSelecting && selectedCourtId !== court.id ? 0 : 2} rotationIntensity={0.05} floatIntensity={0.2} key={court.id}>
-              <Court id={court.id} />
-            </Float>
+            <Court key={court.id} id={court.id} />
           ))}
         </group>
 
-        <ContactShadows 
-          opacity={0.8} 
-          scale={200} 
-          blur={2} 
-          far={15} 
-          resolution={1024} 
-          color="#000000" 
-        />
-
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.12, 75]} receiveShadow>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 75]}>
           <planeGeometry args={[72, 150]} />
-          <MeshReflectorMaterial
-            blur={[400, 200]}
-            resolution={512}
-            mixBlur={1}
-            mixStrength={20}
-            mirror={0.6}
-            roughness={0.2}
-            depthScale={1.2}
-            minDepthThreshold={0.4}
-            maxDepthThreshold={1.4}
-            color="#050505"
-            metalness={0.8}
-          />
+          <meshStandardMaterial color="#0f172a" roughness={0.8} />
         </mesh>
 
         <Timeline3D />
@@ -112,7 +112,6 @@ export const Scene: React.FC = () => {
         <EffectComposer enableNormalPass={false}>
           <DepthOfField focusDistance={0.02} focalLength={enableDof ? 0.015 : 0} bokehScale={enableDof ? 1.5 : 0} height={480} />
           <Bloom luminanceThreshold={1.8} luminanceSmoothing={0.6} height={300} intensity={0.25} />
-          <Noise opacity={0.015} />
           <Vignette eskil={false} offset={0.2} darkness={0.9} />
         </EffectComposer>
       </Suspense>

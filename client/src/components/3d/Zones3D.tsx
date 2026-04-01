@@ -58,7 +58,7 @@ export const Zones3D: React.FC = () => {
       </group>
 
       <mesh position={[0, 15, 75]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[40, 40, 150, 48, 1, true, 0, Math.PI]} />
+        <cylinderGeometry args={[40, 40, 150, 16, 1, true, 0, Math.PI]} />
         <meshStandardMaterial ref={domeMatRef} color="#0f172a" roughness={0.98} metalness={0.03} side={THREE.BackSide} transparent />
       </mesh>
 
@@ -207,19 +207,19 @@ export const Zones3D: React.FC = () => {
           return (
             <group>
               <mesh position={[0, h / 2, hl]}>
-                <planeGeometry args={[w, h, 12, 6]} />
+                <planeGeometry args={[w, h, 6, 3]} />
                 {mat}
               </mesh>
               <mesh position={[0, h / 2, -hl]} rotation={[0, Math.PI, 0]}>
-                <planeGeometry args={[w, h, 12, 6]} />
+                <planeGeometry args={[w, h, 6, 3]} />
                 {mat}
               </mesh>
               <mesh position={[hw, h / 2, 0]} rotation={[0, -Math.PI / 2, 0]}>
-                <planeGeometry args={[l, h, 18, 6]} />
+                <planeGeometry args={[l, h, 9, 3]} />
                 {mat}
               </mesh>
               <mesh position={[-hw, h / 2, 0]} rotation={[0, Math.PI / 2, 0]}>
-                <planeGeometry args={[l, h, 18, 6]} />
+                <planeGeometry args={[l, h, 9, 3]} />
                 {mat}
               </mesh>
               {[
@@ -229,7 +229,7 @@ export const Zones3D: React.FC = () => {
                 [-hw, 0, -hl],
               ].map((p, i) => (
                 <mesh key={`t-post-${i}`} position={[p[0], h / 2, p[2]]} castShadow>
-                  <cylinderGeometry args={[0.08, 0.08, h, 12]} />
+                  <cylinderGeometry args={[0.08, 0.08, h, 6]} />
                   <meshStandardMaterial color="#334155" metalness={0.85} roughness={0.2} />
                 </mesh>
               ))}
