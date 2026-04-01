@@ -12,15 +12,22 @@ export interface SelectedSlot {
   price: number;
 }
 
+export interface SlotRecord {
+  id: string;
+  time: string;
+  price: number;
+}
+
 export type BookingStatus = 'CONFIRMED' | 'CANCELLED' | 'COMPLETED'
 
 export interface BookingRecord {
   id: string
-  userId?: string
+  userId: string | null
   courtId: string
   courtName: string
   slotId: string
   slotTime: string
+  date?: string
   fullName: string
   phone: string
   note?: string
@@ -140,44 +147,6 @@ export interface ProductRecord {
   tag?: string;
 }
 
-// Realistic Master Zoning Positions (Metric Meters)
-// Total Facility Area: ~72m width x 150m depth
-const defaultCourts: CourtData[] = [
-  // 4 Pickleball Courts (16m x 8m including buffers)
-  // X centers: -27, -9, 9, 27 | Z center: 35
-  ...Array(4).fill(null).map((_, i) => ({
-    id: `pickleball-${i + 1}`,
-    name: `Pickleball ${i + 1}`,
-    type: 'PICKLEBALL' as CourtType,
-    position: [(i - 1.5) * 18, 0, 35] as [number, number, number],
-    status: 'AVAILABLE' as CourtStatus,
-    price: 120000,
-    currentUsersViewing: 0,
-  })),
-  // 4 Badminton Courts (18m x 9m including buffers)
-  // X centers: -27, -9, 9, 27 | Z center: 75
-  ...Array(4).fill(null).map((_, i) => ({
-    id: `badminton-${i + 1}`,
-    name: `Badminton ${i + 1}`,
-    type: 'BADMINTON' as CourtType,
-    position: [(i - 1.5) * 18, 0, 75] as [number, number, number],
-    status: 'AVAILABLE' as CourtStatus,
-    price: 150000,
-    currentUsersViewing: 0,
-  })),
-  // 1 Tennis Court (36m x 18m including buffers)
-  // X center: 0 | Z center: 120
-  {
-    id: 'tennis-1',
-    name: 'Tennis 1',
-    type: 'TENNIS',
-    position: [0, 0, 120],
-    status: 'AVAILABLE',
-    price: 250000,
-    currentUsersViewing: 0,
-  }
-];
-
 interface AppState {
   // --- PROGRESS ---
   currentStep: Step;
@@ -186,6 +155,7 @@ interface AppState {
   // --- 3D / COURT ---
   viewMode: ViewMode;
   courts: CourtData[];
+  slots: SlotRecord[];
   selectedCourtId: string | null;
   hoveredCourtId: string | null;
   selectedSlot: SelectedSlot | null;
@@ -205,6 +175,7 @@ interface AppState {
   matches: MatchRecord[]
   products: ProductRecord[]
   user: UserProfile | null
+  tempUserId: string
   isLoading: boolean
   error: string | null
   notification: { message: string, type: 'success' | 'error' } | null
@@ -229,6 +200,8 @@ interface AppState {
   // Admin fetch
   fetchBookings: () => Promise<void>
   fetchOrders: () => Promise<void>
+  fetchCourts: () => Promise<void>
+  fetchSlots: () => Promise<void>
 
   // --- ACTIONS ---
   setNotification: (notif: { message: string, type: 'success' | 'error' } | null) => void;
@@ -238,6 +211,8 @@ interface AppState {
   setHoveredCourt: (courtId: string | null) => void;
   setSelectedSlot: (slot: SelectedSlot | null) => void;
   updateCourtStatus: (courtId: string, status: CourtStatus) => Promise<void>;
+  selectedDate: string; // YYYY-MM-DD
+  setSelectedDate: (date: string) => void;
   createBooking: (payload: Omit<BookingRecord, 'id' | 'createdAt' | 'status'>) => Promise<string>;
   updateBookingStatus: (bookingId: string, status: BookingStatus) => Promise<void>;
   createOrder: (payload: OrderCreatePayload) => Promise<string>;
@@ -262,10 +237,12 @@ export const useStore = create<AppState>()(
       currentStep: 'EXPLORE',
       viewMode: 'OVERVIEW',
       completedSteps: [],
-      courts: defaultCourts,
+      courts: [],
+      slots: [],
       selectedCourtId: null,
       hoveredCourtId: null,
       selectedSlot: null,
+      selectedDate: new Date().toISOString().split('T')[0],
       cameraPosition: [0, 60, 180],
       cameraLookAt: [0, 0, 60],
       realtimeLocks: {},
@@ -302,12 +279,13 @@ export const useStore = create<AppState>()(
         }
       ],
       products: [
-        { id: 'p1', name: 'Nước suối Aquafina', price: 15000, stock: 50, minStock: 10, category: 'Nước uống', image: 'https://source.unsplash.com/aHN4dlCa4Oo/1200x900' },
-        { id: 'p2', name: 'Nước tăng lực Redbull', price: 25000, stock: 30, minStock: 5, category: 'Nước uống', image: 'https://source.unsplash.com/ArFB6Tz7it8/1200x900' },
-        { id: 'p3', name: 'Bóng Pickleball Franklin', price: 85000, stock: 20, minStock: 2, category: 'Dụng cụ', image: 'https://source.unsplash.com/79UPJtBsSAg/1200x900' },
-        { id: 'p4', name: 'Quấn cán vợt Yonex', price: 45000, stock: 100, minStock: 20, category: 'Dụng cụ', image: 'https://source.unsplash.com/IJS9yvaM2vk/1200x900' }
+        { id: 'p1', name: 'Nước suối Aquafina', price: 15000, stock: 50, minStock: 10, category: 'Nước uống', image: 'https://cdn.tgdd.vn/Products/Images/7070/75535/bhx/nuoc-tinh-khiet-aquafina-500ml-202312151322045812.jpg' },
+        { id: 'p2', name: 'Nước tăng lực Redbull', price: 25000, stock: 30, minStock: 5, category: 'Nước uống', image: 'https://cdn.tgdd.vn/Products/Images/3226/75501/bhx/nuoc-tang-luc-redbull-250ml-202308181343588262.jpg' },
+        { id: 'p3', name: 'Bóng Pickleball Franklin', price: 85000, stock: 20, minStock: 2, category: 'Dụng cụ', image: 'https://spalding.vn/wp-content/uploads/2024/05/bong-pickleball-franklin-x-40-1.jpg' },
+        { id: 'p4', name: 'Quấn cán vợt Yonex', price: 45000, stock: 100, minStock: 20, category: 'Dụng cụ', image: 'https://shopvnb.com/uploads/gallery/quan-can-vot-cau-long-yonex-ac-102ex-chinh-hang_1684534033.webp' }
       ],
       user: null,
+      tempUserId: 'guest-' + Math.random().toString(36).substring(2, 11),
       isLoading: false,
       error: null,
       notification: null,
@@ -438,6 +416,7 @@ export const useStore = create<AppState>()(
           courtName: b.court?.name || b.courtName || '',
           slotId: b.slotId,
           slotTime: b.slotTime || '',
+          date: b.date,
           fullName: b.fullName || '',
           phone: b.phone || '',
           note: b.note || undefined,
@@ -448,6 +427,29 @@ export const useStore = create<AppState>()(
           isManual: b.isManual ?? undefined,
         }))
         set({ bookings: mapped })
+      },
+
+      fetchCourts: async () => {
+        try {
+          const res = await api.get('/courts')
+          const mapped: CourtData[] = res.data.map((c: any) => ({
+            ...c,
+            position: JSON.parse(c.position || '[0,0,0]'),
+            currentUsersViewing: 0,
+          }))
+          set({ courts: mapped })
+        } catch (err) {
+          console.error('Lỗi khi tải danh sách sân:', err)
+        }
+      },
+
+      fetchSlots: async () => {
+        try {
+          const res = await api.get('/courts/slots')
+          set({ slots: res.data })
+        } catch (err) {
+          console.error('Lỗi khi tải khung giờ:', err)
+        }
       },
 
       fetchOrders: async () => {
@@ -483,8 +485,19 @@ export const useStore = create<AppState>()(
         set({ isLoading: true })
         try {
           const hasToken = !!localStorage.getItem('access_token')
-          const productsRes = await api.get('/products').catch(() => ({ data: [] }))
+          const [productsRes, courtsRes, slotsRes] = await Promise.all([
+            api.get('/products').catch(() => ({ data: [] })),
+            api.get('/courts').catch(() => ({ data: [] })),
+            api.get('/courts/slots').catch(() => ({ data: [] })),
+          ])
+          
           set({ products: productsRes.data || [] })
+          set({ slots: slotsRes.data || [] })
+          set({ courts: (courtsRes.data || []).map((c: any) => ({
+            ...c,
+            position: JSON.parse(c.position || '[0,0,0]'),
+            currentUsersViewing: 0,
+          })) })
 
           if (!hasToken) return
 
@@ -520,6 +533,7 @@ export const useStore = create<AppState>()(
         return { hoveredCourtId: courtId, courts: updatedCourts };
       }),
       setSelectedSlot: (slot) => set({ selectedSlot: slot }),
+      setSelectedDate: (date) => set({ selectedDate: date }),
       
       updateCourtStatus: async (courtId, status) => {
         set((state) => ({
@@ -555,7 +569,7 @@ export const useStore = create<AppState>()(
           }))
           return record.id
         } catch (err: any) {
-          const msg = err.response?.data?.message || err.message
+          const msg = err.response?.data?.message || err.message || 'Không thể tạo lượt đặt sân'
           set({ error: msg, isLoading: false })
           throw new Error(msg)
         }

@@ -44,6 +44,22 @@ class SocketService {
     this.socket.on('CURSOR_UPDATE', (data: { userId: string; position: [number, number, number] }) => {
       useStore.getState().updatePresence(data.userId, data.position);
     });
+
+    this.socket.on('BOOKING_CONFIRMED', (booking: any) => {
+      const state = useStore.getState();
+      const exists = state.bookings.some(b => b.id === booking.id);
+      if (!exists) {
+        useStore.setState({ bookings: [booking as any, ...state.bookings] });
+      }
+    });
+
+    this.socket.on('BOOKING_CANCELLED', (booking: any) => {
+      const state = useStore.getState();
+      const updatedBookings = state.bookings.map(b => 
+        b.id === booking.id ? { ...b, status: 'CANCELLED' as const } : b
+      );
+      useStore.setState({ bookings: updatedBookings });
+    });
   }
 
   lockSlot(slotId: string, userId: string) {
