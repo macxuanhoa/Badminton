@@ -22,6 +22,7 @@ export class BookingsController {
       isManual,
       {
         slotTime: body.slotTime,
+        date: body.date,
         fullName: body.fullName,
         phone: body.phone,
         note: body.note,
@@ -30,13 +31,8 @@ export class BookingsController {
     );
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get()
-  async findAll(@Request() req) {
-    // Only Admin/Staff can see all bookings
-    if (req.user.role !== Role.ADMIN && req.user.role !== Role.STAFF) {
-      throw new ForbiddenException('Bạn không có quyền truy cập thông tin này.');
-    }
+  async findAll() {
     return this.bookingsService.getBookings();
   }
 

@@ -38,23 +38,44 @@ async function main() {
 
   // Create some courts
   const courtsData = [
-    { name: 'Sân 1', type: 'BADMINTON', price: 100000 },
-    { name: 'Sân 2', type: 'BADMINTON', price: 100000 },
-    { name: 'Sân 3', type: 'BADMINTON', price: 100000 },
-    { name: 'Sân 4', type: 'PICKLEBALL', price: 120000 },
-    { name: 'Sân 5', type: 'PICKLEBALL', price: 120000 },
-    { name: 'Sân 6', type: 'TENNIS', price: 200000 },
+    ...Array(4).fill(null).map((_, i) => ({
+      id: `pickleball-${i + 1}`,
+      name: `Pickleball ${i + 1}`,
+      type: 'PICKLEBALL',
+      price: 120000,
+      position: JSON.stringify([-25 + (i * 12), 0, 45]),
+    })),
+    ...Array(4).fill(null).map((_, i) => ({
+      id: `badminton-${i + 1}`,
+      name: `Badminton ${i + 1}`,
+      type: 'BADMINTON',
+      price: 150000,
+      position: JSON.stringify([-20 + (i * 10), 0, 80]),
+    })),
+    {
+      id: 'tennis-1',
+      name: 'Tennis 1',
+      type: 'TENNIS',
+      price: 250000,
+      position: JSON.stringify([0, 0, 125]),
+    }
   ];
 
   for (const c of courtsData) {
     await prisma.court.upsert({
-      where: { id: c.name }, // This is just for seeding
-      update: {},
-      create: {
-        id: c.name,
+      where: { id: c.id },
+      update: {
         name: c.name,
         type: c.type,
         price: c.price,
+        position: c.position,
+      },
+      create: {
+        id: c.id,
+        name: c.name,
+        type: c.type,
+        price: c.price,
+        position: c.position,
         status: 'AVAILABLE',
       },
     });
@@ -91,7 +112,7 @@ async function main() {
       stock: 5,
       description: 'Vợt thiên công, phù hợp người chơi có lực tay tốt.',
       tag: 'Best Seller',
-      image: 'https://images.unsplash.com/photo-1558365849-6ebb21c3f4df?q=80&w=1600&auto=format&fit=crop'
+      image: 'https://shopvnb.com/uploads/gallery/vot-cau-long-yonex-astrox-88d-pro-2024-chinh-hang_1710115822.webp'
     },
     { 
       id: 'racket-02', 
@@ -100,7 +121,7 @@ async function main() {
       price: 3200000, 
       stock: 8,
       description: 'Vợt cân bằng, linh hoạt trong cả tấn công và phòng thủ.',
-      image: 'https://images.unsplash.com/photo-1626225967045-9410dd993e41?q=80&w=1600&auto=format&fit=crop'
+      image: 'https://shopvnb.com/uploads/gallery/vot-cau-long-lining-tectonic-7-chinh-hang_1678128373.webp'
     },
     { 
       id: 'shuttle-01', 
@@ -110,7 +131,7 @@ async function main() {
       stock: 50,
       description: 'Cầu lông vũ tiêu chuẩn thi đấu, độ bền cao.',
       tag: 'Hot',
-      image: 'https://images.unsplash.com/photo-1521537634581-0dced2fee2ef?q=80&w=1600&auto=format&fit=crop'
+      image: 'https://shopvnb.com/uploads/gallery/ong-cau-long-thanh-cong-chinh-hang.jpg'
     },
     { 
       id: 'shoes-01', 
@@ -120,7 +141,7 @@ async function main() {
       stock: 3,
       description: 'Phiên bản giới hạn Tai Tzu Ying, hỗ trợ di chuyển tối ưu.',
       tag: 'New',
-      image: 'https://images.unsplash.com/photo-1517256673644-36ad11246d21?q=80&w=1600&auto=format&fit=crop'
+      image: 'https://shopvnb.com/uploads/gallery/giay-cau-long-victor-p9200tty-a-trang-chinh-hang_1711685084.webp'
     },
     { 
       id: 'grip-01', 
@@ -129,7 +150,7 @@ async function main() {
       price: 45000, 
       stock: 100,
       description: 'Độ bám tốt, thấm hút mồ hôi hiệu quả.',
-      image: 'https://images.unsplash.com/photo-1519861531473-9200262188bf?q=80&w=1600&auto=format&fit=crop'
+      image: 'https://shopvnb.com/uploads/gallery/quan-can-vot-cau-long-yonex-ac-102ex-chinh-hang_1684534033.webp'
     },
   ];
 

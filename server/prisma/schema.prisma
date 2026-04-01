@@ -32,7 +32,7 @@ model Court {
   name     String
   type     String      @default("BADMINTON") // BADMINTON, PICKLEBALL, TENNIS
   position String?     // "[x, y, z]"
-  status   String      @default("AVAILABLE") // AVAILABLE, BOOKED, MAINTENANCE
+  status   String      @default("AVAILABLE") // AVAILABLE, MAINTENANCE
   price    Float
   bookings Booking[]
 }
@@ -51,6 +51,7 @@ model Booking {
   court         Court    @relation(fields: [courtId], references: [id])
   slotId        String
   slotTime      String?
+  date          String   // "YYYY-MM-DD"
   fullName      String?
   phone         String?
   note          String?

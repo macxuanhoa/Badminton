@@ -1,9 +1,13 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { BookingGateway } from '../gateways/booking.gateway';
 
 @Injectable()
 export class BookingsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private bookingGateway: BookingGateway,
+  ) {}
 
   async createBooking(
     userId: string | null,
@@ -12,17 +16,23 @@ export class BookingsService {
     isManual: boolean = false,
     extraInfo?: {
       slotTime?: string;
+      date?: string;
       fullName?: string;
       phone?: string;
       note?: string;
       paymentMethod?: string;
     }
   ) {
-    // 1. Check if slot is taken
+    if (!extraInfo?.date) {
+      throw new BadRequestException('Vui lòng chọn ngày đặt sân.');
+    }
+
+    // 1. Check if slot is taken for that specific date
     const existing = await this.prisma.booking.findFirst({
       where: {
         courtId,
         slotId,
+        date: extraInfo.date,
         status: { not: 'CANCELLED' },
       },
     });
@@ -52,6 +62,7 @@ export class BookingsService {
         courtId,
         slotId,
         slotTime: extraInfo?.slotTime,
+        date: extraInfo.date,
         fullName: extraInfo?.fullName,
         phone: extraInfo?.phone,
         note: extraInfo?.note,
@@ -61,14 +72,10 @@ export class BookingsService {
       },
     });
 
-    const courtUpdate = this.prisma.court.update({
-      where: { id: courtId },
-      data: { status: 'BOOKED' },
-    });
-
     // Case 1: Manual (Staff/Admin) OR Guest (no userId)
     if (isManual || !userId) {
-      const [booking] = await this.prisma.$transaction([bookingCreate, courtUpdate]);
+      const [booking] = await this.prisma.$transaction([bookingCreate]);
+      this.bookingGateway.server.emit('BOOKING_CONFIRMED', booking);
       return booking;
     }
 
@@ -81,7 +88,8 @@ export class BookingsService {
       },
     });
 
-    const [booking] = await this.prisma.$transaction([bookingCreate, userUpdate, courtUpdate]);
+    const [booking] = await this.prisma.$transaction([bookingCreate, userUpdate]);
+    this.bookingGateway.server.emit('BOOKING_CONFIRMED', booking);
     return booking;
   }
 
@@ -89,17 +97,14 @@ export class BookingsService {
     const booking = await this.prisma.booking.findUnique({ where: { id: bookingId } });
     if (!booking) throw new NotFoundException('Không tìm thấy lịch đặt.');
 
-    await this.prisma.$transaction([
+    const [updated] = await this.prisma.$transaction([
       this.prisma.booking.update({
         where: { id: bookingId },
         data: { status: 'CANCELLED' },
-      }),
-      this.prisma.court.update({
-        where: { id: booking.courtId },
-        data: { status: 'AVAILABLE' },
-      }),
+      })
     ]);
 
+    this.bookingGateway.server.emit('BOOKING_CANCELLED', updated);
     return { success: true };
   }
 
