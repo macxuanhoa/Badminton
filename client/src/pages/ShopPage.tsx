@@ -176,8 +176,8 @@ export function ShopPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-12">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+    <div className="mx-auto max-w-7xl px-4 md:px-6 py-8 md:py-12 overflow-x-hidden">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 mb-8 md:mb-12">
         <div className="space-y-2">
           <div className="text-primary text-[10px] font-bold uppercase tracking-[0.2em]">Elyra Shop</div>
           <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tight">Dụng Cụ <span className="text-primary italic">Chuyên Nghiệp</span></h1>
@@ -187,22 +187,22 @@ export function ShopPage() {
 
       <div className="sticky top-[88px] z-[120] mb-10">
         <div className="glass rounded-3xl border-white/5 px-4 py-3 flex items-center justify-center">
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-2 md:gap-5 overflow-x-auto custom-scrollbar pb-1 md:pb-0">
             {['Sản phẩm', 'Thông tin', 'Hoàn tất'].map((s, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${
+              <div key={i} className="flex items-center gap-1 md:gap-2 shrink-0">
+                <div className={`w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center text-[9px] md:text-[10px] font-bold ${
                   (i === 0 && step === 'SELECT') || (i === 1 && step === 'REVIEW') || (i === 2 && step === 'CONFIRM')
                     ? 'bg-primary text-surface'
                     : 'bg-white/10 text-gray-500'
                 }`}>
                   {i + 1}
                 </div>
-                <span className={`text-[10px] font-bold uppercase tracking-widest ${
+                <span className={`text-[9px] md:text-[10px] font-bold uppercase tracking-widest ${
                   (i === 0 && step === 'SELECT') || (i === 1 && step === 'REVIEW') || (i === 2 && step === 'CONFIRM')
                     ? 'text-white'
                     : 'text-gray-600'
                 }`}>{s}</span>
-                {i < 2 && <div className="w-8 h-px bg-white/10" />}
+                {i < 2 && <div className="w-4 md:w-8 h-px bg-white/10 mx-1 md:mx-0" />}
               </div>
             ))}
           </div>
@@ -294,7 +294,7 @@ export function ShopPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12 items-start">
         {/* Main Area */}
         <div className="lg:col-span-8">
           <AnimatePresence mode="wait">
@@ -395,7 +395,7 @@ export function ShopPage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="glass p-10 rounded-[40px] border-white/5 space-y-8"
+                className="glass p-6 md:p-10 rounded-3xl md:rounded-[40px] border-white/5 space-y-6 md:space-y-8"
               >
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-white uppercase tracking-tight">Thông tin <span className="text-primary italic">Đặt hàng</span></h2>
@@ -618,7 +618,7 @@ export function ShopPage() {
                 key="confirm"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="glass p-20 rounded-[40px] border-white/5 text-center space-y-6"
+                className="glass p-12 md:p-20 rounded-[32px] md:rounded-[40px] border-white/5 text-center space-y-4 md:space-y-6"
               >
                 <div className="text-8xl animate-bounce-slow mb-8">📦</div>
                 <h2 className="text-4xl font-black text-white uppercase tracking-tight">Đã nhận <span className="text-primary italic">Đơn hàng!</span></h2>

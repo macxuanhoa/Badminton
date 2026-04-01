@@ -13,7 +13,7 @@ export function HomePage() {
     .map(b => b.courtId) : []
 
   return (
-    <div className="w-full flex flex-col bg-app text-app gap-24 pb-24">
+    <div className="w-full flex flex-col bg-app text-app gap-12 md:gap-24 pb-12 md:pb-24 overflow-x-hidden">
       {/* Hero Section */}
       <section className="relative min-h-[85vh] flex items-center pt-24 lg:pt-0">
         <div className="mx-auto max-w-7xl px-6 w-full grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -59,9 +59,9 @@ export function HomePage() {
             )}
           </div>
 
-          <div className="relative group">
+          <div className="relative group w-full max-w-full">
             <div className="absolute -inset-4 bg-primary/10 blur-3xl rounded-full opacity-50 transition-opacity group-hover:opacity-100" />
-            <div className="relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl aspect-[4/3] bg-slate-900">
+            <div className="relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl aspect-[4/3] bg-slate-900 w-full">
               <img 
                 src="https://images.unsplash.com/photo-1599474924187-334a4ae5bd3c?q=80&w=2400&auto=format&fit=crop"
                 alt="Badminton Professional Court" 
