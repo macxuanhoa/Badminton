@@ -86,6 +86,7 @@ export interface OrderRecord {
 export interface OrderCreatePayload {
   guestName?: string
   guestPhone?: string
+  guestAddress?: string
   items: OrderItem[]
   total: number
   paymentMethod?: 'CASH' | 'TRANSFER' | 'CARD'
@@ -147,7 +148,28 @@ export interface ProductRecord {
   tag?: string;
 }
 
+export interface KnowledgeSection {
+  heading: string;
+  body: string;
+}
+
+export interface KnowledgeRecord {
+  id: string;
+  slug: string;
+  title: string;
+  desc: string;
+  img: string;
+  readTime: string;
+  level: 'NEWBIE' | 'INTERMEDIATE' | 'PRO' | 'ADVANCED';
+  sections: KnowledgeSection[] | string;
+  createdAt: string;
+}
+
 interface AppState {
+  // --- CART ---
+  cart: Record<string, number>;
+  setCart: (cart: Record<string, number> | ((prevCart: Record<string, number>) => Record<string, number>)) => void;
+  clearCart: () => void;
   // --- PROGRESS ---
   currentStep: Step;
   completedSteps: Step[];
@@ -174,6 +196,7 @@ interface AppState {
   lockers: LockerRecord[]
   matches: MatchRecord[]
   products: ProductRecord[]
+  knowledge: KnowledgeRecord[]
   user: UserProfile | null
   tempUserId: string
   isLoading: boolean
@@ -196,6 +219,12 @@ interface AppState {
   addProduct: (product: Omit<ProductRecord, 'id'>) => Promise<void>
   updateProduct: (id: string, product: Partial<ProductRecord>) => Promise<void>
   deleteProduct: (id: string) => Promise<void>
+
+  // Knowledge
+  fetchKnowledge: () => Promise<void>
+  addKnowledge: (knowledge: Omit<KnowledgeRecord, 'id' | 'createdAt'>) => Promise<void>
+  updateKnowledge: (id: string, knowledge: Partial<Omit<KnowledgeRecord, 'id' | 'createdAt'>>) => Promise<void>
+  deleteKnowledge: (id: string) => Promise<void>
 
   // Admin fetch
   fetchBookings: () => Promise<void>
@@ -234,6 +263,11 @@ interface AppState {
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
+      cart: {},
+      setCart: (cart) => set((state) => ({ 
+        cart: typeof cart === 'function' ? cart(state.cart) : cart 
+      })),
+      clearCart: () => set({ cart: {} }),
       currentStep: 'EXPLORE',
       viewMode: 'OVERVIEW',
       completedSteps: [],
@@ -279,11 +313,17 @@ export const useStore = create<AppState>()(
         }
       ],
       products: [
-        { id: 'p1', name: 'Nước suối Aquafina', price: 15000, stock: 50, minStock: 10, category: 'Nước uống', image: 'https://cdn.tgdd.vn/Products/Images/7070/75535/bhx/nuoc-tinh-khiet-aquafina-500ml-202312151322045812.jpg' },
-        { id: 'p2', name: 'Nước tăng lực Redbull', price: 25000, stock: 30, minStock: 5, category: 'Nước uống', image: 'https://cdn.tgdd.vn/Products/Images/3226/75501/bhx/nuoc-tang-luc-redbull-250ml-202308181343588262.jpg' },
-        { id: 'p3', name: 'Bóng Pickleball Franklin', price: 85000, stock: 20, minStock: 2, category: 'Dụng cụ', image: 'https://spalding.vn/wp-content/uploads/2024/05/bong-pickleball-franklin-x-40-1.jpg' },
-        { id: 'p4', name: 'Quấn cán vợt Yonex', price: 45000, stock: 100, minStock: 20, category: 'Dụng cụ', image: 'https://shopvnb.com/uploads/gallery/quan-can-vot-cau-long-yonex-ac-102ex-chinh-hang_1684534033.webp' }
+        { id: 'racket-01', name: 'Yonex Astrox 88D Pro', category: 'Vợt Cầu Lông', price: 3850000, stock: 5, description: 'Vợt thiên công, phù hợp người chơi có lực tay tốt, chuyên dùng cho tấn công mạnh mẽ.', tag: 'Best Seller', image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxZTFlMmUiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwYTBhMGEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0idXJsKCNnKSIvPjx0ZXh0IHg9IjIwMCIgeT0iMTYwIiBmb250LXNpemU9IjgwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMzliNTZmIj7wn5S/PC90ZXh0Pjx0ZXh0IHg9IjIwMCIgeT0iMjIwIiBmb250LXNpemU9IjIwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjZmZmIiBmb250LXdlaWdodD0iYm9sZCI+Vl9UX0M8L3RleHQ+PC9zdmc+' },
+        { id: 'racket-02', name: 'Lining Tectonic 7', category: 'Vợt Cầu Lông', price: 3200000, stock: 8, description: 'Vợt cân bằng, linh hoạt trong cả tấn công và phòng thủ, phù hợp mọi trình độ.', image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImcyIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMmQxYTIyIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMGQwYjBkIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9InVybCgjZzIpIi8+PHRleHQgeD0iMjAwIiB5PSIxNjAiIGZvbnQtc2l6ZT0iODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmNzE3MzYiP/Cfk788L3RleHQ+PHRleHQgeD0iMjAwIiB5PSIyMjAiIGZvbnQtc2l6ZT0iMjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmYiIGZvbnQtd2VpZ2h0PSJib2xkIj5MSU5JTkc8L3RleHQ+PC9zdmc+' },
+        { id: 'racket-03', name: 'Victor Thruster F Claw', category: 'Vợt Cầu Lông', price: 4200000, stock: 4, description: 'Vợt top đầu, thiết kế head-heavy, lực đập cực mạnh, dành cho người chơi tấn công.', tag: 'Hot', image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImczIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMTIwMjA3Ii8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDYwNDA2Ii8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9InVybCgjZzMpIi8+PHRleHQgeD0iMjAwIiB5PSIxNjAiIGZvbnQtc2l6ZT0iODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNlZjE5NTAiP/Cfk788L3RleHQ+PHRleHQgeD0iMjAwIiB5PSIyMjAiIGZvbnQtc2l6ZT0iMjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmYiIGZvbnQtd2VpZ2h0PSJib2xkIj5WSUNUT1I8L3RleHQ+PC9zdmc+' },
+        { id: 'shuttle-01', name: 'Cầu Thành Công (12 quả)', category: 'Quả Cầu Lông', price: 220000, stock: 50, description: 'Cầu lông vũ tiêu chuẩn thi đấu, độ bền cao, quỹ đạo ổn định.', tag: 'Hot', image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9Imc0IiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMTAxYjE3Ii8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDQwNzA1Ii8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9InVybCgjZzQpIi8+PHRleHQgeD0iMjAwIiB5PSIxNjAiIGZvbnQtc2l6ZT0iODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM3YmQxNGIiP/Cfk7M8L3RleHQ+PHRleHQgeD0iMjAwIiB5PSIyMjAiIGZvbnQtc2l6ZT0iMjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmYiIGZvbnQtd2VpZ2h0PSJib2xkIj5DQUlMQU5HTzwvdGV4dD48L3N2Zz4=' },
+        { id: 'shuttle-02', name: 'Cầu RSL Tourney Classic', category: 'Quả Cầu Lông', price: 350000, stock: 30, description: 'Cầu lông vũ chất lượng cao, dùng cho các giải đấu chuyên nghiệp.', image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ZzUiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxZDIxMjUiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwNTA1MDciLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0idXJsKCNnNSkiLz48dGV4dCB4PSIyMDAiIHk9IjE2MCIgZm9udC1zaXplPSI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk0YTM0YiI+8J+Tsw8L3RleHQ+PHRleHQgeD0iMjAwIiB5PSIyMjAiIGZvbnQtc2l6ZT0iMjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmYiIGZvbnQtd2VpZ2h0PSJib2xkIj5SU0w8L3RleHQ+PC9zdmc+' },
+        { id: 'shoes-01', name: 'Victor P9200TTY', category: 'Giày Cầu Lông', price: 2450000, stock: 3, description: 'Phiên bản giới hạn Tai Tzu Ying, hỗ trợ di chuyển tối ưu, đệm Shock Absorption.', tag: 'New', image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ZzYiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxODE1MTUiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwNDA0MDQiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0idXJsKCNnNikiLz48dGV4dCB4PSIyMDAiIHk9IjE2MCIgZm9udC1zaXplPSI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2YzN2IyMiI+8J+TqTwvdGV4dD48dGV4dCB4PSIyMDAiIHk9IjIyMCIgZm9udC1zaXplPSIyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC13ZWlnaHQ9ImJvbGQiPkdJQUhTPC90ZXh0Pjwvc3ZnPg==' },
+        { id: 'shoes-02', name: 'Yonex SHB 65Z3', category: 'Giày Cầu Lông', price: 2850000, stock: 6, description: 'Giày cầu lông cao cấp, hỗ trợ nhanh nhẹ, bám sân tốt.', tag: 'Best Seller', image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ZzciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxYTFhMmEiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwYjBiMGIiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0idXJsKCNnNykiLz48dGV4dCB4PSIyMDAiIHk9IjE2MCIgZm9udC1zaXplPSI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzUxNWJmZiI+8J+TqTwvdGV4dD48dGV4dCB4PSIyMDAiIHk9IjIyMCIgZm9udC1zaXplPSIyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC13ZWlnaHQ9ImJvbGQiPllPTkVYPC90ZXh0Pjwvc3ZnPg==' },
+        { id: 'grip-01', name: 'Quấn cán Yonex AC102EX', category: 'Phụ Kiện', price: 45000, stock: 100, description: 'Độ bám tốt, thấm hút mồ hôi hiệu quả, mềm tay.', image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ZzgiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxNzFiMWUiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwNDA1MDciLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0idXJsKCNnOCkiLz48dGV4dCB4PSIyMDAiIHk9IjE2MCIgZm9udC1zaXplPSI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzdkNmRmZiI+8J+TsTwvdGV4dD48dGV4dCB4PSIyMDAiIHk9IjIyMCIgZm9udC1zaXplPSIyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC13ZWlnaHQ9ImJvbGQiPlFVTU4gQ0FOPC90ZXh0Pjwvc3ZnPg==' },
+        { id: 'string-01', name: 'Dây căng Yonex BG66 Ultimax', category: 'Phụ Kiện', price: 120000, stock: 40, description: 'Dây căng tốt, cảm giác đánh tốt, nảy cao.', image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ZzkiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxNjFiMTciLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwNDA0MDYiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0idXJsKCNnOSkiLz48dGV4dCB4PSIyMDAiIHk9IjE2MCIgZm9udC1zaXplPSI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2VhOWMxMSI+8J+Tuw8vdGV4dD48dGV4dCB4PSIyMDAiIHk9IjIyMCIgZm9udC1zaXplPSIyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC13ZWlnaHQ9ImJvbGQiPlNUUklORzwvdGV4dD48L3N2Zz4=' },
       ],
+      knowledge: [],
       user: null,
       tempUserId: 'guest-' + Math.random().toString(36).substring(2, 11),
       isLoading: false,
@@ -396,14 +436,79 @@ export const useStore = create<AppState>()(
       },
 
       deleteProduct: async (id) => {
-        set({ isLoading: true })
+        set({ isLoading: true });
         try {
-          await api.delete(`/products/${id}`)
-          set((s) => ({ products: s.products.filter((p) => p.id !== id) }))
+          await api.delete(`/products/${id}`);
+          set((s) => ({ products: s.products.filter((p) => p.id !== id) }));
         } catch (err: any) {
-          throw new Error(err.response?.data?.message || 'Lỗi khi xóa sản phẩm')
+          throw new Error(err.response?.data?.message || 'Lỗi khi xóa sản phẩm');
         } finally {
-          set({ isLoading: false })
+          set({ isLoading: false });
+        }
+      },
+
+      fetchKnowledge: async () => {
+        set({ isLoading: true });
+        try {
+          const res = await api.get('/knowledge');
+          // Parse sections from JSON string if needed
+          const mapped = res.data.map((k: any) => ({
+            ...k,
+            sections: typeof k.sections === 'string' ? JSON.parse(k.sections) : k.sections,
+          }));
+          set({ knowledge: mapped });
+        } catch (err) {
+          console.error('Lỗi khi tải kiến thức:', err);
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      addKnowledge: async (data) => {
+        set({ isLoading: true });
+        try {
+          const payload = { ...data, sections: JSON.stringify(data.sections) };
+          const res = await api.post('/knowledge', payload);
+          const newKnowledge = {
+            ...res.data,
+            sections: typeof res.data.sections === 'string' ? JSON.parse(res.data.sections) : res.data.sections,
+          };
+          set((s) => ({ knowledge: [newKnowledge, ...s.knowledge] }));
+        } catch (err: any) {
+          throw new Error(err.response?.data?.message || 'Lỗi khi thêm kiến thức');
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      updateKnowledge: async (id, data) => {
+        set({ isLoading: true });
+        try {
+          const payload = data.sections ? { ...data, sections: JSON.stringify(data.sections) } : data;
+          const res = await api.put(`/knowledge/${id}`, payload);
+          const updatedKnowledge = {
+            ...res.data,
+            sections: typeof res.data.sections === 'string' ? JSON.parse(res.data.sections) : res.data.sections,
+          };
+          set((s) => ({
+            knowledge: s.knowledge.map((k) => (k.id === id ? updatedKnowledge : k)),
+          }));
+        } catch (err: any) {
+          throw new Error(err.response?.data?.message || 'Lỗi khi cập nhật kiến thức');
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      deleteKnowledge: async (id) => {
+        set({ isLoading: true });
+        try {
+          await api.delete(`/knowledge/${id}`);
+          set((s) => ({ knowledge: s.knowledge.filter((k) => k.id !== id) }));
+        } catch (err: any) {
+          throw new Error(err.response?.data?.message || 'Lỗi khi xóa kiến thức');
+        } finally {
+          set({ isLoading: false });
         }
       },
 
@@ -436,6 +541,8 @@ export const useStore = create<AppState>()(
             ...c,
             position: JSON.parse(c.position || '[0,0,0]'),
             currentUsersViewing: 0,
+            isHot: Boolean(c.isHot),
+            isDiscount: Boolean(c.isDiscount),
           }))
           set({ courts: mapped })
         } catch (err) {
@@ -497,6 +604,8 @@ export const useStore = create<AppState>()(
             ...c,
             position: JSON.parse(c.position || '[0,0,0]'),
             currentUsersViewing: 0,
+            isHot: Boolean(c.isHot),
+            isDiscount: Boolean(c.isDiscount),
           })) })
 
           if (!hasToken) return
@@ -727,6 +836,7 @@ export const useStore = create<AppState>()(
     {
       name: 'elyra-hub-premium-store-v2',
       partialize: (state) => ({
+        cart: state.cart,
         courts: state.courts,
         bookings: state.bookings,
         orders: state.orders,

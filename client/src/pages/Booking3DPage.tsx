@@ -180,28 +180,31 @@ export function Booking3DPage() {
 
           <div className="flex w-full md:w-auto justify-center items-center gap-2 md:gap-4 overflow-x-auto custom-scrollbar pb-1 md:pb-0">
             <div className="bg-[#020617] px-3 md:px-4 py-2 md:py-3 rounded-2xl border border-white/5 flex items-center gap-2 md:gap-4 backdrop-blur-md shadow-2xl shrink-0">
-              {['Khám phá', 'Chọn sân', 'Chọn giờ', 'Xác nhận'].map((label, i) => (
-                <div key={label} className="flex items-center gap-1.5 md:gap-2">
-                  <div
-                    className={`w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-[9px] md:text-[10px] font-bold ${
-                      i === stepIndex ? 'bg-primary text-surface' : 'bg-white/10 text-gray-500'
-                    }`}
-                  >
-                    {i + 1}
+              <div className="flex items-center gap-2 md:gap-4 whitespace-nowrap px-2 py-1">
+                {['Khám phá', 'Chọn sân', 'Chọn giờ', 'Xác nhận'].map((label, i) => (
+                  <div key={label} className="flex items-center gap-1.5 md:gap-2 shrink-0">
+                    <div
+                      className={`w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-[9px] md:text-[10px] font-bold ${
+                        i === stepIndex ? 'bg-primary text-surface' : 'bg-white/10 text-gray-500'
+                      }`}
+                    >
+                      {i + 1}
+                    </div>
+                    <span className={`text-[9px] md:text-[10px] font-bold uppercase tracking-widest hidden sm:inline ${i === stepIndex ? 'text-white' : 'text-gray-600'}`}>
+                      {label}
+                    </span>
+                    {i < 3 && <div className="w-2 md:w-4 h-px bg-white/10" />}
                   </div>
-                  <span className={`text-[9px] md:text-[10px] font-bold uppercase tracking-widest hidden sm:inline ${i === stepIndex ? 'text-white' : 'text-gray-600'}`}>
-                    {label}
-                  </span>
-                  {i < 3 && <div className="w-2 md:w-4 h-px bg-white/10" />}
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
             
             <input 
               type="date" 
               value={selectedDate} 
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-[#020617] border border-white/10 text-white rounded-2xl px-3 md:px-4 py-2 md:py-3 text-[10px] md:text-[11px] font-bold focus:outline-none focus:border-primary/50 shadow-2xl backdrop-blur-md shrink-0"
+              className="custom-date-input bg-[#020617] border border-white/10 text-white rounded-2xl px-3 md:px-4 py-2 md:py-3 text-[10px] md:text-[11px] font-bold focus:outline-none focus:border-primary/50 shadow-2xl backdrop-blur-md shrink-0"
+              style={{ colorScheme: 'dark' }}
               min={new Date().toISOString().split('T')[0]}
             />
           </div>

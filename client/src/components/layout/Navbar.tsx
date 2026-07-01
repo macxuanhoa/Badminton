@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, Link } from 'react-router-dom'
+import { NavLink, Link, useLocation } from 'react-router-dom'
 import { useStore } from '../../store/useStore'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export function Navbar() {
   const user = useStore((s) => s.user)
@@ -10,20 +11,17 @@ export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
-  const mobileMenuRef = useRef<HTMLDivElement | null>(null)
+  const location = useLocation()
+
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [location])
 
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
       if (!(e.target instanceof Node)) return
       if (menuOpen && menuRef.current && !menuRef.current.contains(e.target)) {
         setMenuOpen(false)
-      }
-      if (mobileMenuOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
-        // Prevent closing when clicking the toggle button
-        const isToggleButton = (e.target as HTMLElement).closest('[data-mobile-toggle]')
-        if (!isToggleButton) {
-          setMobileMenuOpen(false)
-        }
       }
     }
     const onKeyDown = (e: KeyboardEvent) => {
@@ -38,161 +36,176 @@ export function Navbar() {
       window.removeEventListener('mousedown', onMouseDown)
       window.removeEventListener('keydown', onKeyDown)
     }
-  }, [menuOpen, mobileMenuOpen])
+  }, [menuOpen])
   
-  const base = 'px-3 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all duration-200 relative'
-  const active = 'text-primary bg-primary/5'
-  const inactive = 'text-slate-400 hover:bg-white/5'
+  const navLinks = [
+    { to: '/', label: 'Trang Chủ' },
+    { to: '/booking', label: 'Đặt Sân' },
+    { to: '/shop', label: 'Cửa Hàng' },
+    { to: '/knowledge', label: 'Kiến Thức' },
+    ...(user && (user.role === 'ADMIN' || user.role === 'STAFF') 
+      ? [{ to: '/admin', label: 'Hệ Thống' }] 
+      : []
+    ),
+  ]
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-[200] border-b border-app bg-[color:var(--surface-2)] backdrop-blur-md">
-      <div className="mx-auto max-w-7xl px-6 py-2.5 flex items-center justify-between">
-        <NavLink to="/" className="text-app font-bold tracking-tight text-lg flex items-center gap-2.5 group">
-          <div className="bg-primary w-8 h-8 rounded-lg flex items-center justify-center transition-transform shadow-sm">
-            <span className="text-[#020617] text-sm font-black italic">E</span>
+    <header className="fixed top-0 left-0 right-0 z-[200] border-b border-white/5 bg-[color:var(--surface-2)] backdrop-blur-xl h-[72px] flex items-center">
+      <div className="mx-auto max-w-7xl px-4 md:px-6 w-full flex items-center justify-between">
+        <NavLink to="/" className="flex items-center gap-3 group">
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-primary w-9 h-9 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20"
+          >
+            <span className="text-[#020617] text-base font-black italic">E</span>
+          </motion.div>
+          <div className="flex flex-col leading-none">
+            <span className="uppercase tracking-tighter text-lg font-black text-white group-hover:text-primary transition-colors">ELYRA</span>
+            <span className="text-primary text-[10px] font-bold uppercase tracking-[0.2em] mt-0.5">Badminton</span>
           </div>
-          <span className="hidden sm:inline uppercase tracking-tight text-base font-black">ELYRA <span className="text-primary font-medium">HUB</span></span>
         </NavLink>
-        <nav className="flex items-center gap-1.5">
-          <div className="hidden md:flex items-center gap-1.5">
-            {[
-              { to: '/', label: 'Trang Chủ' },
-              { to: '/booking', label: 'Đặt Sân' },
-              { to: '/shop', label: 'Cửa Hàng' },
-              { to: '/knowledge', label: 'Kiến Thức' },
-            ].map((link) => (
-              <NavLink 
-                key={link.to}
-                to={link.to} 
-                className={({ isActive }) => `
-                  ${base} ${isActive ? active : inactive}
-                `}
-              >
-                {link.label}
-              </NavLink>
-            ))}
-          </div>
-          
-          <div className="ml-3 pl-3 border-l border-white/10 flex items-center gap-3">
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-app hover:bg-white/10 transition-all hidden sm:block"
+
+        <nav className="hidden md:flex items-center gap-1">
+          {navLinks.map((link) => (
+            <NavLink 
+              key={link.to}
+              to={link.to} 
+              className={({ isActive }) => `
+                px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all duration-300 relative group
+                ${isActive ? 'text-primary' : 'text-slate-400 hover:text-white'}
+              `}
             >
-              {theme === 'light' ? 'Dark' : 'Light'}
-            </button>
-            {user ? (
-              <div className="flex items-center gap-2.5">
-                <div className="text-right hidden sm:block">
-                  <div className="text-app text-[10px] font-bold uppercase tracking-tight leading-none mb-1">{user.name}</div>
-                  <div className="text-primary text-[9px] font-medium leading-none">{user.walletBalance.toLocaleString()}đ</div>
-                </div>
-                <div className="relative" ref={menuRef}>
-                  <button
-                    type="button"
-                    onClick={() => setMenuOpen((v) => !v)}
-                    className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-slate-400 hover:text-white transition-all border border-white/10"
-                    aria-label="Menu"
-                  >
-                    <span className="text-[12px] leading-none">⋯</span>
-                  </button>
+              {({ isActive }) => (
+                <>
+                  <span className="relative z-10">{link.label}</span>
+                  {isActive && (
+                    <motion.div 
+                      layoutId="nav-active"
+                      className="absolute inset-0 bg-primary/10 rounded-xl -z-0 border border-primary/20"
+                      transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-primary group-hover:w-1/2 transition-all duration-300 rounded-full" />
+                </>
+              )}
+            </NavLink>
+          ))}
+        </nav>
+        
+        <div className="flex items-center gap-2 md:gap-4">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all hidden sm:flex"
+          >
+            {theme === 'light' ? '🌙' : '☀️'}
+          </button>
+
+          {user ? (
+            <div className="flex items-center gap-3">
+              <div className="text-right hidden sm:block">
+                <div className="text-white text-[10px] font-black uppercase tracking-tight leading-none mb-1.5">{user.name}</div>
+                <div className="text-primary text-[11px] font-black tracking-tighter leading-none">{user.walletBalance.toLocaleString()}đ</div>
+              </div>
+              <div className="relative" ref={menuRef}>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setMenuOpen((v) => !v)}
+                  className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 hover:text-white transition-all border border-white/10 hover:border-white/20"
+                >
+                  <span className="text-lg">⋯</span>
+                </motion.button>
+                <AnimatePresence>
                   {menuOpen && (
-                    <div className="absolute right-0 mt-2 w-44 glass rounded-2xl border border-white/10 p-1 shadow-2xl">
-                      <div className="px-3 py-2 rounded-xl border border-white/10 bg-white/[0.02]">
-                        <div className="text-white text-[10px] font-bold uppercase tracking-widest truncate">
-                          {user.name || user.email}
-                        </div>
-                        <div className="mt-1 flex items-center justify-between gap-2">
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute right-0 mt-3 w-52 glass rounded-2xl border border-white/10 p-1.5 shadow-2xl z-[300]"
+                    >
+                      <div className="px-4 py-3 rounded-xl border border-white/10 bg-white/[0.02] mb-1.5">
+                        <div className="text-white text-[11px] font-black uppercase tracking-widest truncate">{user.name}</div>
+                        <div className="mt-1.5 flex items-center justify-between gap-2">
                           <div className="text-muted text-[9px] font-bold uppercase tracking-widest">{user.role}</div>
-                          <div className="text-primary text-[9px] font-bold">{user.walletBalance.toLocaleString()}đ</div>
+                          <div className="text-primary text-[10px] font-black">{user.walletBalance.toLocaleString()}đ</div>
                         </div>
                       </div>
-                      <div className="h-px bg-white/10 my-1 mx-2" />
+                      <div className="h-px bg-white/5 my-1 mx-2" />
                       {user.role === 'USER' && (
-                        <Link
-                          to="/profile"
-                          onClick={() => setMenuOpen(false)}
-                          className="block px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest text-gray-300 hover:bg-white/5"
-                        >
-                          Hồ sơ
+                        <Link to="/profile" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white hover:bg-white/5 transition-all">
+                          <span>👤</span> Hồ sơ
                         </Link>
                       )}
                       {(user.role === 'ADMIN' || user.role === 'STAFF') && (
-                        <Link
-                          to="/admin"
-                          onClick={() => setMenuOpen(false)}
-                          className="block px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest text-gray-300 hover:bg-white/5"
-                        >
-                          Vận hành
+                        <Link to="/admin" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white hover:bg-white/5 transition-all">
+                          <span>⚙️</span> Hệ thống
                         </Link>
                       )}
                       <button
                         type="button"
-                        onClick={() => {
-                          setMenuOpen(false)
-                          logout()
-                        }}
-                        className="w-full text-left px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest text-red-300 hover:bg-white/5"
+                        onClick={logout}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest text-red-400 hover:bg-red-500/10 transition-all"
                       >
-                        Đăng xuất
+                        <span>🚪</span> Đăng xuất
                       </button>
-                    </div>
+                    </motion.div>
                   )}
-                </div>
+                </AnimatePresence>
               </div>
-            ) : (
-              <Link to="/login" className="btn-primary !py-1.5 !px-3.5 !text-[10px] rounded-md">
-                ĐĂNG NHẬP
-              </Link>
-            )}
+            </div>
+          ) : (
+            <Link to="/login" className="btn-primary !py-2 !px-5 !text-[10px] !rounded-xl shadow-lg shadow-primary/20">
+              ĐĂNG NHẬP
+            </Link>
+          )}
 
-            <div className="md:hidden relative" ref={mobileMenuRef}>
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white"
+          >
+            {mobileMenuOpen ? '✕' : '☰'}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed inset-0 top-[72px] z-[190] md:hidden bg-[#020617]/95 backdrop-blur-xl p-6"
+          >
+            <nav className="flex flex-col gap-2">
+              {navLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  className={({ isActive }) => `
+                    flex items-center justify-between px-6 py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all
+                    ${isActive ? 'bg-primary text-[#020617]' : 'text-white bg-white/5'}
+                  `}
+                >
+                  {link.label}
+                  <span>→</span>
+                </NavLink>
+              ))}
+              <div className="h-px bg-white/10 my-4" />
               <button
                 type="button"
-                data-mobile-toggle="true"
-                onClick={() => setMobileMenuOpen((v) => !v)}
-                className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-slate-400 hover:text-white transition-all border border-white/10"
-                aria-label="Mobile Menu"
+                onClick={toggleTheme}
+                className="flex items-center justify-between px-6 py-4 rounded-2xl text-sm font-black uppercase tracking-widest text-white bg-white/5"
               >
-                <span className="text-[12px] leading-none">☰</span>
+                Giao diện
+                <span>{theme === 'light' ? '🌙' : '☀️'}</span>
               </button>
-              {mobileMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 glass rounded-2xl border border-white/10 p-2 shadow-2xl">
-                  {[
-                    { to: '/', label: 'Trang Chủ' },
-                    { to: '/booking', label: 'Đặt Sân' },
-                    { to: '/shop', label: 'Cửa Hàng' },
-                    { to: '/knowledge', label: 'Kiến Thức' },
-                  ].map((link) => (
-                    <NavLink
-                      key={link.to}
-                      to={link.to}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={({ isActive }) => `
-                        block w-full text-left px-3 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest mb-1
-                        ${isActive ? 'text-primary bg-primary/10' : 'text-gray-300 hover:bg-white/5'}
-                      `}
-                    >
-                      {link.label}
-                    </NavLink>
-                  ))}
-                  <div className="h-px bg-white/10 my-2 mx-1" />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      toggleTheme()
-                      setMobileMenuOpen(false)
-                    }}
-                    className="w-full text-left px-3 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest text-gray-300 hover:bg-white/5"
-                  >
-                    Giao diện: {theme === 'light' ? 'Tối' : 'Sáng'}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </nav>
-      </div>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   )
 }

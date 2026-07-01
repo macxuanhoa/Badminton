@@ -95,7 +95,7 @@ export function ProfilePage() {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mx-auto max-w-7xl px-4 md:px-6 py-12 md:py-24 overflow-x-hidden"
+      className="mx-auto max-w-7xl px-4 md:px-6 py-6 md:py-12"
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12">
         {/* Profile Card */}

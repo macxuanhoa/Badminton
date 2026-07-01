@@ -1,19 +1,25 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { knowledgePosts } from './knowledge.data'
+import { useStore, type KnowledgeRecord } from '../store/useStore'
 
 export function KnowledgePage() {
+  const knowledge = useStore((s) => s.knowledge)
+  const fetchKnowledge = useStore((s) => s.fetchKnowledge)
   const [query, setQuery] = useState('')
-  const [level, setLevel] = useState<'ALL' | 'NEWBIE' | 'INTERMEDIATE' | 'PRO'>('ALL')
+  const [level, setLevel] = useState<'ALL' | 'NEWBIE' | 'INTERMEDIATE' | 'PRO' | 'ADVANCED'>('ALL')
+
+  useEffect(() => {
+    fetchKnowledge()
+  }, [fetchKnowledge])
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return knowledgePosts.filter((p) => {
+    return knowledge.filter((p) => {
       if (level !== 'ALL' && p.level !== level) return false
       if (!q) return true
       return `${p.title} ${p.desc}`.toLowerCase().includes(q)
     })
-  }, [query, level])
+  }, [query, level, knowledge])
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-12">
@@ -44,7 +50,7 @@ export function KnowledgePage() {
               />
             </div>
             <div className="md:col-span-6 flex items-center justify-start md:justify-end gap-2 flex-wrap">
-              {(['ALL', 'NEWBIE', 'INTERMEDIATE', 'PRO'] as const).map((k) => (
+              {(['ALL', 'NEWBIE', 'INTERMEDIATE', 'ADVANCED', 'PRO'] as const).map((k) => (
                 <button
                   key={k}
                   type="button"

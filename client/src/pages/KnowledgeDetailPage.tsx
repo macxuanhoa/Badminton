@@ -1,9 +1,53 @@
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { knowledgePosts } from './knowledge.data'
+import { useStore, type KnowledgeRecord, type KnowledgeSection } from '../store/useStore'
+import api from '../api'
 
 export function KnowledgeDetailPage() {
   const { slug } = useParams()
-  const post = knowledgePosts.find((p) => p.slug === slug) || null
+  const knowledge = useStore((s) => s.knowledge)
+  const fetchKnowledge = useStore((s) => s.fetchKnowledge)
+  const [post, setPost] = useState<KnowledgeRecord | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      try {
+        // First check store
+        let found = knowledge.find((p) => p.slug === slug)
+        if (!found) {
+          // Fetch from API by slug
+          const res = await api.get(`/knowledge/slug/${slug}`)
+          found = {
+            ...res.data,
+            sections: typeof res.data.sections === 'string' ? JSON.parse(res.data.sections) : res.data.sections
+          }
+        }
+        setPost(found || null)
+      } catch {
+        setPost(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (slug) load()
+  }, [slug, knowledge])
+
+  // Ensure sections are parsed
+  const parsedSections: KnowledgeSection[] = post?.sections
+    ? (typeof post.sections === 'string' ? JSON.parse(post.sections) : post.sections)
+    : []
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-5xl px-6 py-16">
+        <div className="glass rounded-3xl border border-white/5 p-10 text-center">
+          <div className="text-white font-black text-2xl tracking-tight">Đang tải...</div>
+        </div>
+      </div>
+    )
+  }
 
   if (!post) {
     return (
@@ -56,8 +100,8 @@ export function KnowledgeDetailPage() {
           <p className="text-slate-400 text-base leading-relaxed mt-4">{post.desc}</p>
 
           <div className="mt-10 space-y-8">
-            {post.sections.map((s) => (
-              <div key={s.heading} className="space-y-3">
+            {parsedSections.map((s, idx) => (
+              <div key={idx} className="space-y-3">
                 <div className="text-white font-bold text-lg tracking-tight">{s.heading}</div>
                 <div className="text-slate-400 text-sm leading-relaxed">{s.body}</div>
               </div>

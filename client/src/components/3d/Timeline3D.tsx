@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useStore } from '../../store/useStore';
 import * as THREE from 'three';
@@ -12,15 +12,27 @@ interface SlotProps {
   isLocked: boolean;
   price: number;
   lockId: string;
+  selectedSlotId: string | null;
+  setStep: (step: any) => void;
+  setSelectedSlot: (slot: any) => void;
+  userId: string;
 }
 
-const Slot: React.FC<SlotProps> = ({ id, time, position, isLocked, price, lockId }) => {
+const Slot: React.FC<SlotProps> = ({ 
+  id, 
+  time, 
+  position, 
+  isLocked, 
+  price, 
+  lockId, 
+  selectedSlotId, 
+  setStep, 
+  setSelectedSlot, 
+  userId 
+}) => {
   const meshRef = useRef<THREE.Group>(null!);
   const boxRef = useRef<THREE.Mesh>(null!);
   const [hovered, setHovered] = useState(false);
-  const setStep = useStore((state) => state.setStep);
-  const setSelectedSlot = useStore((state) => state.setSelectedSlot);
-  const selectedSlotId = useStore((state) => state.selectedSlot?.id);
   const isSelected = selectedSlotId === time;
   
   // Spring animation state
@@ -72,11 +84,7 @@ const Slot: React.FC<SlotProps> = ({ id, time, position, isLocked, price, lockId
     material.emissiveIntensity = THREE.MathUtils.lerp(material.emissiveIntensity, emissiveIntensity, delta * 5);
   });
 
-  const user = useStore((state) => state.user);
-  const tempUserId = useStore((state) => state.tempUserId);
-  const userId = user?.id || tempUserId;
-  
-  const handleClick = (e: any) => {
+  const handleClick = useCallback((e: any) => {
     e.stopPropagation();
     if (isLocked) return;
 
@@ -90,7 +98,7 @@ const Slot: React.FC<SlotProps> = ({ id, time, position, isLocked, price, lockId
     setSelectedSlot({ id: time, time, price });
     socketService.lockSlot(lockId, userId);
     setStep('CONFIRM');
-  };
+  }, [isLocked, isSelected, setSelectedSlot, lockId, userId, setStep, time, price]);
 
   return (
     <group position={position} ref={meshRef}>
@@ -98,8 +106,16 @@ const Slot: React.FC<SlotProps> = ({ id, time, position, isLocked, price, lockId
         <mesh
           ref={boxRef}
           onClick={handleClick}
-          onPointerOver={(e) => { e.stopPropagation(); setHovered(true); if(!isLocked) document.body.style.cursor = 'pointer'; }}
-          onPointerOut={(e) => { e.stopPropagation(); setHovered(false); document.body.style.cursor = 'auto'; }}
+          onPointerOver={useCallback((e: any) => { 
+            e.stopPropagation(); 
+            setHovered(true); 
+            if(!isLocked) document.body.style.cursor = 'pointer'; 
+          }, [isLocked])}
+          onPointerOut={useCallback((e: any) => { 
+            e.stopPropagation(); 
+            setHovered(false); 
+            document.body.style.cursor = 'auto'; 
+          }, [])}
           castShadow
         >
           <boxGeometry args={[2, 0.4, 1.2]} />
@@ -140,6 +156,7 @@ const Slot: React.FC<SlotProps> = ({ id, time, position, isLocked, price, lockId
 };
 
 export const Timeline3D: React.FC = () => {
+  // Call ALL hooks at the TOP, BEFORE ANY conditionals or early returns!
   const currentStep = useStore((state) => state.currentStep);
   const selectedCourtId = useStore((state) => state.selectedCourtId);
   const courts = useStore((state) => state.courts);
@@ -149,6 +166,24 @@ export const Timeline3D: React.FC = () => {
   const setStep = useStore((state) => state.setStep);
   const selectedSlotId = useStore((state) => state.selectedSlot?.id);
   const setSelectedSlot = useStore((state) => state.setSelectedSlot);
+  const user = useStore((state) => state.user);
+  const tempUserId = useStore((state) => state.tempUserId);
+  const allSlots = useStore((state) => state.slots);
+
+  // Derive court first (even if null)
+  const court = useMemo(() => courts.find(c => c.id === selectedCourtId), [courts, selectedCourtId]);
+  
+  // Derive userId first
+  const userId = useMemo(() => user?.id || tempUserId, [user, tempUserId]);
+  
+  // Derive displaySlots first (even if court is null - use dummy price)
+  const displaySlots = useMemo(() => allSlots.length > 0 ? allSlots : [
+    { id: '1', time: '05:00 - 06:00', price: Math.round((court?.price || 150000) * 0.6) },
+    { id: '2', time: '06:00 - 07:00', price: Math.round((court?.price || 150000) * 0.7) },
+    { id: '3', time: '17:00 - 18:00', price: court?.price || 150000 },
+    { id: '4', time: '18:00 - 19:00', price: Math.round((court?.price || 150000) * 1.2) },
+    { id: '5', time: '19:00 - 20:00', price: Math.round((court?.price || 150000) * 1.2) },
+  ], [allSlots, court?.price]);
 
   useEffect(() => {
     if (selectedCourtId && currentStep === 'SELECT_COURT') {
@@ -165,22 +200,10 @@ export const Timeline3D: React.FC = () => {
     }
   }, [currentStep, selectedSlotId, setSelectedSlot]);
 
-  if (!selectedCourtId || (currentStep !== 'SELECT_COURT' && currentStep !== 'CHOOSE_TIME' && currentStep !== 'CONFIRM')) {
+  // Now check if we should render nothing
+  if (!selectedCourtId || !court || (currentStep !== 'SELECT_COURT' && currentStep !== 'CHOOSE_TIME' && currentStep !== 'CONFIRM')) {
     return null;
   }
-
-  const court = courts.find(c => c.id === selectedCourtId);
-  const allSlots = useStore((state) => state.slots);
-  if (!court) return null;
-
-  // Use slots from store or fallback to default if not loaded yet
-  const displaySlots = allSlots.length > 0 ? allSlots : [
-    { id: '1', time: '05:00 - 06:00', price: Math.round(court.price * 0.6) },
-    { id: '2', time: '06:00 - 07:00', price: Math.round(court.price * 0.7) },
-    { id: '3', time: '17:00 - 18:00', price: court.price },
-    { id: '4', time: '18:00 - 19:00', price: Math.round(court.price * 1.2) },
-    { id: '5', time: '19:00 - 20:00', price: Math.round(court.price * 1.2) },
-  ];
 
   // Attach timeline to the right side of the court
   const [cx, cy, cz] = court.position;
@@ -211,6 +234,10 @@ export const Timeline3D: React.FC = () => {
             position={[0, 0, index * 1.5]} // Layout along Z axis
             lockId={lockId}
             isLocked={isLocked}
+            selectedSlotId={selectedSlotId}
+            setStep={setStep}
+            setSelectedSlot={setSelectedSlot}
+            userId={userId}
           />
         );
       })}

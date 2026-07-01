@@ -22,6 +22,7 @@ import { AdminBookingsPage } from './pages/admin/AdminBookingsPage'
 import { AdminOrdersPage } from './pages/admin/AdminOrdersPage'
 import { AdminProductsPage } from './pages/admin/AdminProductsPage'
 import { AdminUsersPage } from './pages/admin/AdminUsersPage'
+import { AdminKnowledgePage } from './pages/admin/AdminKnowledgePage'
 
 export default function App() {
   const fetchInitialData = useStore((s) => s.fetchInitialData)
@@ -50,6 +51,7 @@ export default function App() {
             <Route path="bookings" element={<AdminBookingsPage />} />
             <Route path="orders" element={<AdminOrdersPage />} />
             <Route path="products" element={<AdminProductsPage />} />
+            <Route path="knowledge" element={<AdminKnowledgePage />} />
             <Route path="users" element={<RequireRole roles={['ADMIN']}><AdminUsersPage /></RequireRole>} />
           </Route>
         </Route>

@@ -334,12 +334,12 @@ export function AdminPage() {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mx-auto max-w-7xl px-6 py-6 flex flex-col"
+      className="flex flex-col"
     >
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-6 flex-shrink-0">
         <div>
-          <h1 className="text-white font-bold text-3xl tracking-tight uppercase leading-none">ELYRA HUB <span className="text-primary italic">OPERATIONS</span></h1>
-          <p className="text-gray-500 text-[10px] mt-1.5 font-bold uppercase tracking-widest opacity-80">Trung tâm điều phối vận hành thời gian thực.</p>
+          <h1 className="text-white font-bold text-3xl tracking-tight uppercase leading-none">ELYRA HUB <span className="text-primary italic">HỆ THỐNG</span></h1>
+          <p className="text-gray-500 text-[10px] mt-1.5 font-bold uppercase tracking-widest opacity-80">Trung tâm quản lý hệ thống thời gian thực.</p>
         </div>
         <div className="flex glass p-1 rounded-2xl border border-white/5 self-start shadow-xl">
           {(['OPERATIONS', 'BOOKINGS', 'ORDERS', 'PRODUCTS'] as const).map((tab) => (
@@ -350,7 +350,7 @@ export function AdminPage() {
                 activeTab === tab ? 'bg-primary text-surface shadow-lg shadow-primary-glow' : 'text-gray-400 hover:text-white hover:bg-white/5'
               }`}
             >
-              {tab === 'OPERATIONS' ? 'Vận hành' : tab === 'BOOKINGS' ? 'Sân bãi' : tab === 'ORDERS' ? 'Dịch vụ' : 'Kho hàng'}
+              {tab === 'OPERATIONS' ? 'Hệ thống' : tab === 'BOOKINGS' ? 'Sân bãi' : tab === 'ORDERS' ? 'Dịch vụ' : 'Kho hàng'}
             </button>
           ))}
         </div>
@@ -530,7 +530,7 @@ export function AdminPage() {
             </div>
 
             {/* Main Content Area */}
-            <div className="lg:col-span-8 space-y-6">
+            <div className="lg:col-span-8 space-y-6 overflow-x-hidden">
               {/* VIP Presence Banner */}
               {user && (
                 <div className="glass p-6 rounded-3xl border border-primary/20 flex items-center justify-between bg-gradient-to-r from-primary/5 to-transparent shadow-xl flex-shrink-0">

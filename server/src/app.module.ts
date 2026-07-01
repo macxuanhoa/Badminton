@@ -7,9 +7,10 @@ import { BookingsModule } from './bookings/bookings.module';
 import { ProductsModule } from './products/products.module';
 import { OrdersModule } from './orders/orders.module';
 import { CourtsModule } from './courts/courts.module';
+import { KnowledgeModule } from './knowledge/knowledge.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, UsersModule, BookingsModule, ProductsModule, OrdersModule, GatewaysModule, CourtsModule],
+  imports: [PrismaModule, AuthModule, UsersModule, BookingsModule, ProductsModule, OrdersModule, GatewaysModule, CourtsModule, KnowledgeModule],
   controllers: [],
   providers: [],
 })

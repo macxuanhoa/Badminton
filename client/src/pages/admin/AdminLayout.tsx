@@ -8,6 +8,7 @@ export function AdminLayout() {
     { to: '/admin/bookings', label: 'Booking' },
     { to: '/admin/orders', label: 'Đơn hàng' },
     { to: '/admin/products', label: 'Sản phẩm' },
+    { to: '/admin/knowledge', label: 'Kiến thức' },
     ...(user?.role === 'ADMIN' ? [{ to: '/admin/users', label: 'Người dùng' }] : []),
   ]
 

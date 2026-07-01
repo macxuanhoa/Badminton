@@ -30,6 +30,17 @@ export function BookingPage() {
     fetchBookings()
   }, [fetchBookings])
 
+  // Auto-fill form from logged-in user
+  useEffect(() => {
+    if (user) {
+      setForm({
+        fullName: user.name || '',
+        phone: user.phone || '',
+        note: ''
+      })
+    }
+  }, [user])
+
   const selectedCourt = useMemo(() => courts.find((c) => c.id === selectedCourtId) || null, [courts, selectedCourtId])
   
   const slots = useMemo(() => {
@@ -183,15 +194,15 @@ export function BookingPage() {
 
       <div className="sticky top-[88px] z-[120] mb-6">
         <div className="glass rounded-3xl border-white/5 px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex-1 overflow-x-auto">
-            <div className="flex items-center gap-4 whitespace-nowrap">
-              {['Zone', 'Sân', 'Giờ', 'XN'].map((label, i) => (
-                <div key={label} className="flex items-center gap-2">
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                    i === stepIndex ? 'bg-primary text-surface' : 'bg-white/10 text-gray-500'
+          <div className="flex-1 overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-4 whitespace-nowrap px-2 py-1">
+              {['Khu vực', 'Chọn sân', 'Khung giờ', 'Xác nhận'].map((label, i) => (
+                <div key={label} className="flex items-center gap-2 shrink-0">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all duration-500 ${
+                    i <= stepIndex ? 'bg-primary text-[#020617] scale-110' : 'bg-white/5 text-slate-600'
                   }`}>{i + 1}</div>
-                  <span className={`text-[10px] font-bold uppercase tracking-widest ${i === stepIndex ? 'text-white' : 'text-gray-600'}`}>{label}</span>
-                  {i < 3 && <div className="w-8 h-px bg-white/10" />}
+                  <span className={`text-[10px] md:text-xs font-black uppercase tracking-widest transition-colors duration-500 ${i <= stepIndex ? 'text-white' : 'text-slate-700'}`}>{label}</span>
+                  {i < 3 && <div className={`w-6 md:w-12 h-0.5 rounded-full transition-colors duration-500 ${i < stepIndex ? 'bg-primary' : 'bg-white/5'}`} />}
                 </div>
               ))}
             </div>
@@ -210,7 +221,61 @@ export function BookingPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* Booking Confirmation UI */}
+      <AnimatePresence>
+        {doneId && (
+          <motion.div 
+            key="booking-confirm"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="glass rounded-[40px] border border-primary/20 p-10 md:p-16 text-center space-y-8 shadow-2xl shadow-primary/10 mb-8"
+          >
+            <div className="relative mx-auto mb-6">
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl animate-pulse"></div>
+              <div className="relative w-32 h-32 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center text-7xl mx-auto">
+                🎉
+              </div>
+            </div>
+            <div className="space-y-3">
+              <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter">
+                Đặt sân <span className="text-primary italic">thành công</span>!
+              </h2>
+              <div className="text-slate-400 max-w-md mx-auto font-medium leading-relaxed text-sm">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className="text-[#818cf8] text-sm font-semibold">Mã đơn:</span>
+                  <span className="bg-[#1e293b] border border-white/10 px-4 py-2 rounded-xl font-mono text-lg font-bold text-primary">
+                    #{doneId.slice(0, 8).toUpperCase()}
+                  </span>
+                </div>
+                <p>Chúng tôi sẽ liên hệ xác nhận đặt sân sớm nhất!</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mx-auto">
+              <button 
+                onClick={() => {
+                  setDoneId(null);
+                  setZone(null);
+                  selectCourt(null);
+                  setSelectedSlot(null);
+                }}
+                className="px-8 py-4 bg-primary text-[#020617] font-black rounded-2xl shadow-lg shadow-primary/30 uppercase tracking-[0.15em] text-sm hover:scale-105 transition-all"
+              >
+                Đặt thêm sân
+              </button>
+              <Link 
+                to="/"
+                className="px-8 py-4 bg-white/5 border border-white/10 text-white font-black rounded-2xl shadow-lg uppercase tracking-[0.15em] text-sm hover:bg-white/10 hover:border-white/20 transition-all"
+              >
+                Về trang chủ
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {!doneId && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-4 space-y-6">
           {!zone ? (
             <div className="glass rounded-3xl border-white/5 p-5 space-y-4">
@@ -346,7 +411,8 @@ export function BookingPage() {
                           type="date" 
                           value={selectedDate} 
                           onChange={(e) => setSelectedDate(e.target.value)}
-                          className="bg-black/40 border border-white/10 text-white rounded-xl px-3 py-1.5 text-[10px] font-bold focus:outline-none focus:border-primary/50"
+                          className="custom-date-input bg-black/40 border border-white/10 text-white rounded-xl px-3 py-1.5 text-[10px] font-bold focus:outline-none focus:border-primary/50"
+                          style={{ colorScheme: 'dark' }}
                           min={new Date().toISOString().split('T')[0]}
                         />
                       </div>
@@ -396,7 +462,14 @@ export function BookingPage() {
 
                   <div className="space-y-4">
                     <div className="space-y-3">
-                      <label className="label-standard text-[9px]">Thông Tin Người Đặt</label>
+                      <div className="flex items-center gap-2">
+                        <label className="label-standard text-[9px] m-0">Thông Tin Người Đặt</label>
+                        {user && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[8px] font-bold uppercase tracking-wider">
+                            <span>👤</span> Từ tài khoản
+                          </span>
+                        )}
+                      </div>
                       <div className="space-y-2.5">
                         <div>
                           <input
@@ -437,13 +510,13 @@ export function BookingPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <label className="label-standard text-[9px]">Thanh Toán</label>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-3 gap-3">
                         {[
-                          { id: 'CASH', label: 'Tiền mặt' },
-                          { id: 'TRANSFER', label: 'Chuyển khoản' },
-                          { id: 'CARD', label: 'Thẻ' },
+                          { id: 'CASH', label: 'Tiền mặt', icon: '💵' },
+                          { id: 'TRANSFER', label: 'Chuyển khoản', icon: '🏦' },
+                          { id: 'CARD', label: 'Thẻ', icon: '💳' },
                         ].map((m) => (
                           <button
                             key={m.id}
@@ -452,17 +525,18 @@ export function BookingPage() {
                               setPaymentMethod(m.id as any)
                               setPayErrors({})
                             }}
-                            className={`rounded-xl border p-2 text-center transition-all ${
+                            className={`group rounded-2xl border p-4 text-center transition-all duration-300 ${
                               paymentMethod === m.id
-                                ? 'bg-primary/20 border-primary text-primary'
-                                : 'bg-black/40 border-white/5 text-gray-400 hover:bg-black/60 hover:text-white'
+                                ? 'bg-gradient-to-br from-primary/20 to-primary/5 border-primary text-primary shadow-lg shadow-primary/20'
+                                : 'bg-black/40 border-white/5 text-gray-400 hover:bg-white/5 hover:border-white/10 hover:text-white hover:-translate-y-1'
                             }`}
                           >
-                            <div className="text-[9px] font-bold uppercase tracking-widest">{m.label}</div>
+                            <div className="text-2xl mb-1.5">{m.icon}</div>
+                            <div className="text-[9px] font-bold uppercase tracking-wider">{m.label}</div>
                           </button>
                         ))}
                       </div>
-                      <div className="text-gray-500 text-[9px] leading-relaxed">
+                      <div className="text-gray-400 text-[9px] leading-relaxed bg-white/3 p-4 rounded-2xl border border-white/5">
                         {paymentMethod === 'CASH'
                           ? 'Thanh toán tại quầy khi đến sân.'
                           : paymentMethod === 'TRANSFER'
@@ -473,9 +547,9 @@ export function BookingPage() {
                         <button
                           type="button"
                           onClick={() => setPaymentOpen(true)}
-                          className="btn-secondary w-full !py-3 !text-[10px]"
+                          className="w-full py-4 bg-white/5 border border-white/10 text-white text-[10px] font-bold uppercase tracking-wider rounded-2xl hover:bg-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2"
                         >
-                          Nhập thông tin thanh toán
+                          <span>⚙️</span> Nhập thông tin thanh toán
                         </button>
                       )}
                       {(paymentMethod === 'TRANSFER' && payErrors.transfer) && (
@@ -483,129 +557,187 @@ export function BookingPage() {
                       )}
                     </div>
                     {paymentOpen && paymentMethod !== 'CASH' && (
-                      <div className="fixed inset-0 z-[300] flex items-center justify-center p-6">
-                        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setPaymentOpen(false)} />
-                        <div className="relative glass-dark w-full max-w-xl rounded-[28px] border border-white/10 p-8 shadow-2xl">
-                          <div className="flex items-start justify-between gap-4 mb-6">
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+                      >
+                        <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={() => setPaymentOpen(false)} />
+                        <motion.div 
+                          initial={{ scale: 0.95, y: 20 }}
+                          animate={{ scale: 1, y: 0 }}
+                          exit={{ scale: 0.95, y: 20 }}
+                          className="relative glass-dark w-full max-w-2xl rounded-[32px] border border-white/10 p-8 md:p-10 shadow-2xl"
+                        >
+                          <div className="flex items-start justify-between gap-4 mb-8">
                             <div>
-                              <div className="text-primary text-[10px] font-bold uppercase tracking-widest">Payment</div>
-                              <h2 className="text-white text-xl font-bold tracking-tight uppercase">
-                                {paymentMethod === 'TRANSFER' ? 'Chuyển khoản' : 'Thẻ'}
+                              <div className="text-primary text-[11px] font-bold uppercase tracking-[0.2em]">Payment</div>
+                              <h2 className="text-white text-2xl font-black tracking-tight mt-1">
+                                {paymentMethod === 'TRANSFER' ? 'Chuyển khoản' : 'Thanh toán bằng thẻ'}
                               </h2>
                             </div>
-                            <button type="button" className="btn-secondary !px-3 !py-2 !text-[10px]" onClick={() => setPaymentOpen(false)}>
-                              Đóng
+                            <button 
+                              type="button" 
+                              onClick={() => setPaymentOpen(false)}
+                              className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-white/10 hover:border-white/20 transition-all text-lg"
+                            >
+                              ✕
                             </button>
                           </div>
 
                           {paymentMethod === 'TRANSFER' && (
-                            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                              <div className="md:col-span-5">
-                                <div className="text-muted text-[10px] font-bold uppercase tracking-widest">Quét mã</div>
-                                <div className="mt-3 w-full aspect-square rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                              <div>
+                                <div className="text-gray-400 text-[11px] font-bold uppercase tracking-widest mb-3">Quét mã QR</div>
+                                <div className="w-full aspect-square rounded-3xl border border-white/10 bg-white/5 overflow-hidden shadow-inner">
                                   <img src={transferQrSrc} alt="QR chuyển khoản" className="w-full h-full object-cover" />
                                 </div>
                               </div>
-                              <div className="md:col-span-7 space-y-4">
-                                <div className="text-white font-bold">Thông tin</div>
-                                <div className="space-y-3 text-[11px]">
-                                  <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3">
-                                    <div className="text-muted font-bold uppercase tracking-widest text-[10px]">Ngân hàng</div>
-                                    <div className="text-white font-bold">{transferBankName}</div>
-                                  </div>
-                                  <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3">
-                                    <div className="text-muted font-bold uppercase tracking-widest text-[10px]">STK</div>
-                                    <div className="text-white font-mono font-bold">{transferAccount}</div>
+                              <div className="space-y-6">
+                                <div className="space-y-4">
+                                  <div className="text-white font-black text-lg">Thông tin tài khoản</div>
+                                  <div className="space-y-3">
+                                    <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4">
+                                      <div className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Ngân hàng</div>
+                                      <div className="text-white font-bold text-lg">{transferBankName}</div>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4">
+                                      <div className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Số tài khoản</div>
+                                      <div className="text-white font-mono font-bold text-xl">{transferAccount}</div>
+                                    </div>
                                   </div>
                                 </div>
-                                <label className="inline-flex items-center gap-3 text-[11px] font-semibold text-white pt-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={transferConfirmed}
-                                    onChange={(e) => {
-                                      setTransferConfirmed(e.target.checked)
-                                      if (payErrors.transfer) setPayErrors((s) => ({ ...s, transfer: undefined }))
+                                <label className="inline-flex items-center gap-3 text-sm font-semibold text-white pt-2 cursor-pointer select-none">
+                                  <div 
+                                    onClick={(e) => {
+                                      setTransferConfirmed(!transferConfirmed);
+                                      if (payErrors.transfer) setPayErrors((s) => ({ ...s, transfer: undefined }));
                                     }}
-                                    className="w-4 h-4 rounded border border-white/20 bg-white/5"
-                                  />
-                                  Tôi đã chuyển khoản
+                                    className={`w-6 h-6 rounded-xl border flex items-center justify-center transition-all ${
+                                      transferConfirmed 
+                                        ? 'bg-primary border-primary text-[#020617] shadow-lg shadow-primary/30' 
+                                        : 'border-white/20 bg-white/5 text-transparent'
+                                    }`}
+                                  >
+                                    {transferConfirmed && '✓'}
+                                  </div>
+                                  Tôi đã hoàn tất chuyển khoản
                                 </label>
                                 {payErrors.transfer && (
-                                  <div className="text-red-400 text-[10px] font-bold uppercase tracking-widest">{payErrors.transfer}</div>
+                                  <div className="text-red-400 text-[11px] font-black uppercase tracking-widest bg-red-500/10 px-4 py-3 rounded-2xl border border-red-500/20">
+                                    ⚠️ {payErrors.transfer}
+                                  </div>
                                 )}
                               </div>
                             </div>
                           )}
 
                           {paymentMethod === 'CARD' && (
-                            <div className="space-y-4">
-                              <div>
-                                <label className="label-standard">Số thẻ</label>
+                            <div className="space-y-6">
+                              <div className="space-y-1">
+                                <label className="text-gray-400 text-[11px] font-bold uppercase tracking-widest">Số thẻ</label>
                                 <input
                                   value={card.number}
                                   onChange={(e) => {
                                     setCard((s) => ({ ...s, number: e.target.value }))
                                     if (payErrors.cardNumber) setPayErrors((s) => ({ ...s, cardNumber: undefined }))
                                   }}
-                                  className={`input-standard ${payErrors.cardNumber ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
-                                  placeholder="1234 5678 9012 3456"
+                                  className={`w-full rounded-2xl border px-5 py-4 text-white text-base bg-white/5 focus:bg-white/10 focus:outline-none transition-all ${
+                                    payErrors.cardNumber 
+                                      ? 'border-red-500/40 focus:border-red-500 focus:shadow-[0_0_0_4px_rgba(239,68,68,0.15)]' 
+                                      : 'border-white/10 focus:border-primary/60 focus:shadow-[0_0_0_4px_rgba(34,197,94,0.15)]'
+                                  }`}
+                                  placeholder="0000 0000 0000 0000"
                                   inputMode="numeric"
                                 />
-                                {payErrors.cardNumber && <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{payErrors.cardNumber}</div>}
+                                {payErrors.cardNumber && (
+                                  <div className="text-red-400 text-[11px] font-black uppercase tracking-widest mt-2">
+                                    {payErrors.cardNumber}
+                                  </div>
+                                )}
                               </div>
-                              <div>
-                                <label className="label-standard">Tên trên thẻ</label>
+                              <div className="space-y-1">
+                                <label className="text-gray-400 text-[11px] font-bold uppercase tracking-widest">Tên chủ thẻ</label>
                                 <input
                                   value={card.name}
                                   onChange={(e) => {
                                     setCard((s) => ({ ...s, name: e.target.value }))
                                     if (payErrors.cardName) setPayErrors((s) => ({ ...s, cardName: undefined }))
                                   }}
-                                  className={`input-standard ${payErrors.cardName ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
+                                  className={`w-full rounded-2xl border px-5 py-4 text-white text-base bg-white/5 focus:bg-white/10 focus:outline-none transition-all ${
+                                    payErrors.cardName 
+                                      ? 'border-red-500/40 focus:border-red-500 focus:shadow-[0_0_0_4px_rgba(239,68,68,0.15)]' 
+                                      : 'border-white/10 focus:border-primary/60 focus:shadow-[0_0_0_4px_rgba(34,197,94,0.15)]'
+                                  }`}
                                   placeholder="NGUYEN VAN A"
                                 />
-                                {payErrors.cardName && <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{payErrors.cardName}</div>}
+                                {payErrors.cardName && (
+                                  <div className="text-red-400 text-[11px] font-black uppercase tracking-widest mt-2">
+                                    {payErrors.cardName}
+                                  </div>
+                                )}
                               </div>
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <label className="label-standard">Hạn thẻ (MM/YY)</label>
+                              <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-1">
+                                  <label className="text-gray-400 text-[11px] font-bold uppercase tracking-widest">Hạn thẻ</label>
                                   <input
                                     value={card.expiry}
                                     onChange={(e) => {
                                       setCard((s) => ({ ...s, expiry: e.target.value }))
                                       if (payErrors.cardExpiry) setPayErrors((s) => ({ ...s, cardExpiry: undefined }))
                                     }}
-                                    className={`input-standard ${payErrors.cardExpiry ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
+                                    className={`w-full rounded-2xl border px-5 py-4 text-white text-base bg-white/5 focus:bg-white/10 focus:outline-none transition-all ${
+                                      payErrors.cardExpiry 
+                                        ? 'border-red-500/40 focus:border-red-500 focus:shadow-[0_0_0_4px_rgba(239,68,68,0.15)]' 
+                                        : 'border-white/10 focus:border-primary/60 focus:shadow-[0_0_0_4px_rgba(34,197,94,0.15)]'
+                                    }`}
                                     placeholder="MM/YY"
                                     inputMode="numeric"
                                   />
-                                  {payErrors.cardExpiry && <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{payErrors.cardExpiry}</div>}
+                                  {payErrors.cardExpiry && (
+                                    <div className="text-red-400 text-[11px] font-black uppercase tracking-widest mt-2">
+                                      {payErrors.cardExpiry}
+                                    </div>
+                                  )}
                                 </div>
-                                <div>
-                                  <label className="label-standard">CVC</label>
+                                <div className="space-y-1">
+                                  <label className="text-gray-400 text-[11px] font-bold uppercase tracking-widest">CVC</label>
                                   <input
                                     value={card.cvc}
                                     onChange={(e) => {
                                       setCard((s) => ({ ...s, cvc: e.target.value }))
                                       if (payErrors.cardCvc) setPayErrors((s) => ({ ...s, cardCvc: undefined }))
                                     }}
-                                    className={`input-standard ${payErrors.cardCvc ? '!border-red-500/40 focus:!border-red-500 focus:!shadow-[0_0_0_3px_rgba(239,68,68,0.12)]' : ''}`}
+                                    className={`w-full rounded-2xl border px-5 py-4 text-white text-base bg-white/5 focus:bg-white/10 focus:outline-none transition-all ${
+                                      payErrors.cardCvc 
+                                        ? 'border-red-500/40 focus:border-red-500 focus:shadow-[0_0_0_4px_rgba(239,68,68,0.15)]' 
+                                        : 'border-white/10 focus:border-primary/60 focus:shadow-[0_0_0_4px_rgba(34,197,94,0.15)]'
+                                    }`}
                                     placeholder="123"
                                     inputMode="numeric"
                                   />
-                                  {payErrors.cardCvc && <div className="mt-2 text-red-400 text-[10px] font-bold uppercase tracking-widest">{payErrors.cardCvc}</div>}
+                                  {payErrors.cardCvc && (
+                                    <div className="text-red-400 text-[11px] font-black uppercase tracking-widest mt-2">
+                                      {payErrors.cardCvc}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
                           )}
 
-                          <div className="mt-6 flex justify-end gap-3">
-                            <button type="button" className="btn-primary" onClick={() => setPaymentOpen(false)}>
-                              Xong
+                          <div className="mt-10 flex justify-end">
+                            <button 
+                              type="button" 
+                              onClick={() => setPaymentOpen(false)}
+                              className="px-10 py-4 bg-primary text-[#020617] font-black rounded-2xl shadow-lg shadow-primary/30 uppercase tracking-[0.2em] text-sm hover:scale-105 transition-all"
+                            >
+                              ĐÃ XONG
                             </button>
                           </div>
-                        </div>
-                      </div>
+                        </motion.div>
+                      </motion.div>
                     )}
 
                     <motion.button
@@ -624,6 +756,7 @@ export function BookingPage() {
           </AnimatePresence>
         </div>
       </div>
+      )}
     </motion.div>
   )
 }

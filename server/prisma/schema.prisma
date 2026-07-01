@@ -28,13 +28,15 @@ model User {
 }
 
 model Court {
-  id       String      @id @default(uuid())
-  name     String
-  type     String      @default("BADMINTON") // BADMINTON, PICKLEBALL, TENNIS
-  position String?     // "[x, y, z]"
-  status   String      @default("AVAILABLE") // AVAILABLE, MAINTENANCE
-  price    Float
-  bookings Booking[]
+  id         String      @id @default(uuid())
+  name       String
+  type       String      @default("BADMINTON") // BADMINTON, PICKLEBALL, TENNIS
+  position   String?     // "[x, y, z]"
+  status     String      @default("AVAILABLE") // AVAILABLE, MAINTENANCE
+  price      Float
+  isHot      Boolean     @default(false)
+  isDiscount Boolean     @default(false)
+  bookings   Booking[]
 }
 
 model Slot {
@@ -67,6 +69,7 @@ model Order {
   user          User?    @relation(fields: [userId], references: [id])
   guestName     String?
   guestPhone    String?
+  guestAddress  String?
   items         String   // JSON string of items
   total         Float
   paymentMethod String?  @default("CASH")
@@ -93,4 +96,16 @@ model Locker {
   status String @default("AVAILABLE") // AVAILABLE, OCCUPIED
   userId String?
   user   User?   @relation(fields: [userId], references: [id])
+}
+
+model Knowledge {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  title     String
+  desc      String
+  img       String
+  readTime  String
+  level     String   @default("NEWBIE") // NEWBIE, INTERMEDIATE, ADVANCED, PRO
+  sections  String   // JSON string of sections array
+  createdAt DateTime @default(now())
 }

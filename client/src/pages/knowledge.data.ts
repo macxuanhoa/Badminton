@@ -13,7 +13,7 @@ export const knowledgePosts: KnowledgePost[] = [
     slug: 'bi-quyet-chon-vot',
     title: 'Bí quyết chọn vợt',
     desc: 'Phân tích lực tay, lối đánh và trọng lượng lý tưởng để chọn đúng vợt ngay từ đầu.',
-    img: 'https://images.unsplash.com/photo-1613918108466-292b78a8ef95?q=80&w=1600&auto=format&fit=crop',
+    img: '/images/badminton-hero.svg',
     readTime: '6 phút',
     level: 'NEWBIE',
     sections: [
@@ -35,7 +35,7 @@ export const knowledgePosts: KnowledgePost[] = [
     slug: 'phan-loai-cau-tieu-chuan',
     title: 'Phân loại cầu tiêu chuẩn',
     desc: 'Độ bền, tốc độ và sự khác biệt giữa các loại cầu lông phổ biến.',
-    img: 'https://images.unsplash.com/photo-1521537634581-0dced2fee2ef?q=80&w=1600&auto=format&fit=crop',
+    img: '/images/badminton-hero.svg',
     readTime: '5 phút',
     level: 'NEWBIE',
     sections: [
@@ -57,7 +57,7 @@ export const knowledgePosts: KnowledgePost[] = [
     slug: 'ky-thuat-khoi-dong',
     title: 'Kỹ thuật khởi động',
     desc: 'Tránh chấn thương và tối ưu hiệu suất bằng quy trình khởi động đúng.',
-    img: 'https://images.unsplash.com/photo-1558365849-6ebb21c3f4df?q=80&w=1600&auto=format&fit=crop',
+    img: '/images/badminton-hero.svg',
     readTime: '7 phút',
     level: 'INTERMEDIATE',
     sections: [
@@ -79,7 +79,7 @@ export const knowledgePosts: KnowledgePost[] = [
     slug: 'chien-thuat-danh-doi',
     title: 'Chiến thuật đánh đôi',
     desc: 'Cách di chuyển và phối hợp nhịp nhàng với đồng đội để kiểm soát thế trận.',
-    img: 'https://images.unsplash.com/photo-1626225967045-9410dd993e41?q=80&w=1600&auto=format&fit=crop',
+    img: '/images/badminton-hero.svg',
     readTime: '8 phút',
     level: 'PRO',
     sections: [

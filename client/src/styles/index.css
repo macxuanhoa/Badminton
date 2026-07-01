@@ -23,6 +23,7 @@
 
   html, body, #root {
     height: 100%;
+    overflow-x: hidden;
   }
 
   html[data-theme='light'] .text-white {
@@ -128,6 +129,14 @@
   .text-app { color: var(--app-fg); }
   .text-muted { color: var(--muted); }
   .border-app { border-color: var(--border); }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 .input-standard::placeholder {
@@ -154,21 +163,48 @@
 body {
   margin: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   background: var(--app-bg);
   color: var(--app-fg);
+  scroll-behavior: smooth;
 }
 
 /* Custom Scrollbar for modern look */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--primary);
+}
+
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-bounce-slow {
+  animation: bounce-slow 3s ease-in-out infinite;
+}
+
+/* Custom date input styling for dark theme */
+.custom-date-input {
+  color-scheme: dark;
+}
+
+.custom-date-input::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.8;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.custom-date-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
