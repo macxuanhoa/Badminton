@@ -32,8 +32,8 @@ const Slot: React.FC<SlotProps> = ({
   userId, 
   slot 
 }) => {
-  const meshRef = useRef<THREE.Group>(null!);
-  const boxRef = useRef<THREE.Mesh>(null!);
+  const meshRef = useRef<THREE.Group | null>(null);
+  const boxRef = useRef<THREE.Mesh | null>(null);
   const [hovered, setHovered] = useState(false);
   const isSelected = selectedSlot?.id === slot.id || selectedSlot?.id === time;
   
@@ -80,7 +80,9 @@ const Slot: React.FC<SlotProps> = ({
       emissiveIntensity = 0.2;
     }
 
-    const material = boxRef.current.material as THREE.MeshStandardMaterial;
+    const rawMaterial = boxRef.current.material as unknown;
+    const material = (Array.isArray(rawMaterial) ? rawMaterial[0] : rawMaterial) as THREE.MeshStandardMaterial | undefined;
+    if (!material?.color || !material?.emissive) return;
     material.color.lerp(targetColor, delta * 5);
     material.emissive.lerp(emissiveColor, delta * 5);
     material.emissiveIntensity = THREE.MathUtils.lerp(material.emissiveIntensity, emissiveIntensity, delta * 5);
