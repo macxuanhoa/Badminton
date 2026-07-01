@@ -1,9 +1,9 @@
-import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { useStore } from '../../store/useStore';
-import * as THREE from 'three';
-import { Text, Float } from '@react-three/drei';
-import { socketService } from '../../services/socket.service';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
+import { useFrame } from '@react-three/fiber'
+import { useStore } from '../../store/useStore'
+import * as THREE from 'three'
+import { Text, Float } from '@react-three/drei'
+import { socketService } from '../../services/socket.service'
 
 interface SlotProps {
   id: string;
@@ -12,10 +12,11 @@ interface SlotProps {
   isLocked: boolean;
   price: number;
   lockId: string;
-  selectedSlotId: string | null;
+  selectedSlot: any;
   setStep: (step: any) => void;
   setSelectedSlot: (slot: any) => void;
   userId: string;
+  slot: any;
 }
 
 const Slot: React.FC<SlotProps> = ({ 
@@ -25,15 +26,16 @@ const Slot: React.FC<SlotProps> = ({
   isLocked, 
   price, 
   lockId, 
-  selectedSlotId, 
+  selectedSlot, 
   setStep, 
   setSelectedSlot, 
-  userId 
+  userId, 
+  slot 
 }) => {
   const meshRef = useRef<THREE.Group>(null!);
   const boxRef = useRef<THREE.Mesh>(null!);
   const [hovered, setHovered] = useState(false);
-  const isSelected = selectedSlotId === time;
+  const isSelected = selectedSlot?.id === slot.id || selectedSlot?.id === time;
   
   // Spring animation state
   const [targetY, setTargetY] = useState(0);
@@ -95,10 +97,10 @@ const Slot: React.FC<SlotProps> = ({
       return;
     }
 
-    setSelectedSlot({ id: time, time, price });
+    setSelectedSlot({ id: slot.id, time, price });
     socketService.lockSlot(lockId, userId);
     setStep('CONFIRM');
-  }, [isLocked, isSelected, setSelectedSlot, lockId, userId, setStep, time, price]);
+  }, [isLocked, isSelected, setSelectedSlot, lockId, userId, setStep, time, price, slot]);
 
   return (
     <group position={position} ref={meshRef}>
@@ -155,6 +157,8 @@ const Slot: React.FC<SlotProps> = ({
   );
 };
 
+const SLOTS_PER_PAGE = 5;
+
 export const Timeline3D: React.FC = () => {
   // Call ALL hooks at the TOP, BEFORE ANY conditionals or early returns!
   const currentStep = useStore((state) => state.currentStep);
@@ -164,11 +168,13 @@ export const Timeline3D: React.FC = () => {
   const bookings = useStore((state) => state.bookings);
   const selectedDate = useStore((state) => state.selectedDate);
   const setStep = useStore((state) => state.setStep);
-  const selectedSlotId = useStore((state) => state.selectedSlot?.id ?? null);
+  const selectedSlot = useStore((state) => state.selectedSlot);
   const setSelectedSlot = useStore((state) => state.setSelectedSlot);
   const user = useStore((state) => state.user);
   const tempUserId = useStore((state) => state.tempUserId);
   const allSlots = useStore((state) => state.slots);
+
+  const [currentPage, setCurrentPage] = useState(0);
 
   // Derive court first (even if null)
   const court = useMemo(() => courts.find(c => c.id === selectedCourtId), [courts, selectedCourtId]);
@@ -185,6 +191,13 @@ export const Timeline3D: React.FC = () => {
     { id: '5', time: '19:00 - 20:00', price: Math.round((court?.price || 150000) * 1.2) },
   ], [allSlots, court?.price]);
 
+  // Paginate slots
+  const totalPages = Math.ceil(displaySlots.length / SLOTS_PER_PAGE);
+  const paginatedSlots = useMemo(() => {
+    const start = currentPage * SLOTS_PER_PAGE;
+    return displaySlots.slice(start, start + SLOTS_PER_PAGE);
+  }, [displaySlots, currentPage]);
+
   useEffect(() => {
     if (selectedCourtId && currentStep === 'SELECT_COURT') {
       const timer = setTimeout(() => {
@@ -195,10 +208,10 @@ export const Timeline3D: React.FC = () => {
   }, [selectedCourtId, currentStep, setStep]);
 
   useEffect(() => {
-    if (currentStep === 'CHOOSE_TIME' && selectedSlotId) {
+    if (currentStep === 'CHOOSE_TIME' && selectedSlot) {
       setSelectedSlot(null);
     }
-  }, [currentStep, selectedSlotId, setSelectedSlot]);
+  }, [currentStep, selectedSlot, setSelectedSlot]);
 
   // Now check if we should render nothing
   if (!selectedCourtId || !court || (currentStep !== 'SELECT_COURT' && currentStep !== 'CHOOSE_TIME' && currentStep !== 'CONFIRM')) {
@@ -212,10 +225,11 @@ export const Timeline3D: React.FC = () => {
   const spacingX = court.type === 'TENNIS' ? 10 : court.type === 'BADMINTON' ? 6 : 5;
   const offsetX = cx + spacingX; 
   const baseZ = cz - 4;
+  const trackLength = (SLOTS_PER_PAGE - 1) * 1.5 + 1.5;
 
   return (
     <group position={[offsetX, 0, baseZ]}>
-      {displaySlots.map((slot, index) => {
+      {paginatedSlots.map((slot, index) => {
         const lockId = `${court.id}:${selectedDate}:${slot.time}`;
         const isBooked = bookings.some(b => 
           b.courtId === court.id && 
@@ -234,19 +248,70 @@ export const Timeline3D: React.FC = () => {
             position={[0, 0, index * 1.5]} // Layout along Z axis
             lockId={lockId}
             isLocked={isLocked}
-            selectedSlotId={selectedSlotId}
+            selectedSlot={selectedSlot}
             setStep={setStep}
             setSelectedSlot={setSelectedSlot}
             userId={userId}
+            slot={slot}
           />
         );
       })}
       
       {/* Timeline Base/Track */}
-      <mesh position={[0, -0.05, 3]} receiveShadow>
-        <boxGeometry args={[2.2, 0.05, 8]} />
+      <mesh position={[0, -0.05, (trackLength / 2) - 0.75]} receiveShadow>
+        <boxGeometry args={[2.2, 0.05, trackLength]} />
         <meshStandardMaterial color="#1e293b" roughness={0.9} />
       </mesh>
+
+      {/* Page Navigation Buttons */}
+      {totalPages > 1 && (
+        <>
+          {/* Previous Button */}
+          {currentPage > 0 && (
+            <mesh
+              position={[0, 0.5, -1.5]}
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentPage(p => Math.max(0, p - 1));
+              }}
+              onPointerOver={() => document.body.style.cursor = 'pointer'}
+              onPointerOut={() => document.body.style.cursor = 'auto'}
+            >
+              <cylinderGeometry args={[0.3, 0.3, 0.1, 16]} />
+              <meshStandardMaterial color="#3b82f6" />
+              <Text position={[0, 0.1, 0]} fontSize={0.2} color="white" anchorX="center" anchorY="middle">◀</Text>
+            </mesh>
+          )}
+
+          {/* Next Button */}
+          {currentPage < totalPages - 1 && (
+            <mesh
+              position={[0, 0.5, trackLength + 0.75]}
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentPage(p => Math.min(totalPages - 1, p + 1));
+              }}
+              onPointerOver={() => document.body.style.cursor = 'pointer'}
+              onPointerOut={() => document.body.style.cursor = 'auto'}
+            >
+              <cylinderGeometry args={[0.3, 0.3, 0.1, 16]} />
+              <meshStandardMaterial color="#3b82f6" />
+              <Text position={[0, 0.1, 0]} fontSize={0.2} color="white" anchorX="center" anchorY="middle">▶</Text>
+            </mesh>
+          )}
+
+          {/* Page Indicator */}
+          <Text
+            position={[0, 0.8, trackLength / 2 - 0.75]}
+            fontSize={0.2}
+            color="white"
+            anchorX="center"
+            anchorY="middle"
+          >
+            {currentPage + 1}/{totalPages}
+          </Text>
+        </>
+      )}
     </group>
   );
 };
