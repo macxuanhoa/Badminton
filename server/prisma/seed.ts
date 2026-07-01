@@ -4,6 +4,9 @@ import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+const img = (prompt: string, image_size: string) =>
+  `https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=${encodeURIComponent(prompt)}&image_size=${image_size}`;
+
 async function main() {
   const hashedPassword = await bcrypt.hash('admin123', 10);
 
@@ -61,7 +64,10 @@ async function main() {
   for (const c of courtsData) {
     await prisma.court.upsert({
       where: { id: c.id },
-      update: {},
+      update: {
+        ...c,
+        status: 'AVAILABLE',
+      },
       create: {
         ...c,
         status: 'AVAILABLE',
@@ -97,6 +103,8 @@ async function main() {
   }
 
   // Create initial products
+  await prisma.product.deleteMany();
+
   const productsData = [
     { 
       id: 'racket-1', 
@@ -106,7 +114,7 @@ async function main() {
       stock: 5,
       description: 'Vợt thiên công, phù hợp người chơi có lực tay tốt, chuyên dùng cho tấn công mạnh mẽ.',
       tag: 'Best Seller',
-      image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxZTFlMmUiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwYTBhMGEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0idXJsKCNnKSIvPjx0ZXh0IHg9IjIwMCIgeT0iMTYwIiBmb250LXNpemU9IjgwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMzliNTZmIj7wn5S/PC90ZXh0Pjx0ZXh0IHg9IjIwMCIgeT0iMjIwIiBmb250LXNpemU9IjIwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjZmZmIiBmb250LXdlaWdodD0iYm9sZCI+Vl9UX0M8L3RleHQ+PC9zdmc+'
+      image: img('Professional product photo of a Yonex Astrox 88D Pro badminton racket on dark studio background, premium lighting, high detail, realistic', 'landscape_4_3'),
     },
     { 
       id: 'racket-2', 
@@ -115,7 +123,7 @@ async function main() {
       price: 3200000, 
       stock: 8,
       description: 'Vợt cân bằng, linh hoạt trong cả tấn công và phòng thủ, phù hợp mọi trình độ.',
-      image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImcyIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMmQxYTIyIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMGQwYjBkIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9InVybCgjZzIpIi8+PHRleHQgeD0iMjAwIiB5PSIxNjAiIGZvbnQtc2l6ZT0iODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmNzE3MzYiP/Cfk788L3RleHQ+PHRleHQgeD0iMjAwIiB5PSIyMjAiIGZvbnQtc2l6ZT0iMjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmYiIGZvbnQtd2VpZ2h0PSJib2xkIj5MSU5JTkc8L3RleHQ+PC9zdmc+'
+      image: img('Realistic product photo of Li-Ning Tectonic 7 badminton racket, studio shot, clean dark background, premium lighting', 'landscape_4_3'),
     },
     { 
       id: 'racket-3', 
@@ -125,7 +133,7 @@ async function main() {
       stock: 4,
       description: 'Vợt top đầu, thiết kế head-heavy, lực đập cực mạnh, dành cho người chơi tấn công.',
       tag: 'Hot',
-      image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImczIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMTIwMjA3Ii8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDYwNDA2Ii8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9InVybCgjZzMpIi8+PHRleHQgeD0iMjAwIiB5PSIxNjAiIGZvbnQtc2l6ZT0iODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZjE5NTAiP/Cfk788L3RleHQ+PHRleHQgeD0iMjAwIiB5PSIyMjAiIGZvbnQtc2l6ZT0iMjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmYiIGZvbnQtd2VpZ2h0PSJib2xkIj5WSUNUT1I8L3RleHQ+PC9zdmc+'
+      image: img('High-end product photo of Victor Thruster F Claw badminton racket on black background, dramatic lighting, ultra detailed', 'landscape_4_3'),
     },
     { 
       id: 'shuttle-1', 
@@ -135,7 +143,7 @@ async function main() {
       stock: 50,
       description: 'Cầu lông vũ tiêu chuẩn thi đấu, độ bền cao, quỹ đạo ổn định.',
       tag: 'Hot',
-      image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9Imc0IiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMTAxYjE3Ii8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDQwNzA1Ii8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9InVybCgjZzQpIi8+PHRleHQgeD0iMjAwIiB5PSIxNjAiIGZvbnQtc2l6ZT0iODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM3YmQxNGIiP/Cfk7M8L3RleHQ+PHRleHQgeD0iMjAwIiB5PSIyMjAiIGZvbnQtc2l6ZT0iMjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmYiIGZvbnQtd2VpZ2h0PSJib2xkIj5DQUlMQU5HTzwvdGV4dD48L3N2Zz4='
+      image: img('Realistic product photo of feather badminton shuttlecocks in a tube, studio shot, dark background, high detail', 'landscape_4_3'),
     },
     { 
       id: 'shuttle-2', 
@@ -144,7 +152,7 @@ async function main() {
       price: 350000, 
       stock: 30,
       description: 'Cầu lông vũ chất lượng cao, dùng cho các giải đấu chuyên nghiệp.',
-      image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ZzUiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxZDIxMjUiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwNTA1MDciLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0idXJsKCNnNSkiLz48dGV4dCB4PSIyMDAiIHk9IjE2MCIgZm9udC1zaXplPSI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk0YTM0YiI+8J+Tsw8L3RleHQ+PHRleHQgeD0iMjAwIiB5PSIyMjAiIGZvbnQtc2l6ZT0iMjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmYiIGZvbnQtd2VpZ2h0PSJib2xkIj5SU0w8L3RleHQ+PC9zdmc+'
+      image: img('Product photo of premium RSL badminton shuttlecock tube and shuttles, studio lighting, realistic, clean composition', 'landscape_4_3'),
     },
     { 
       id: 'shoes-1', 
@@ -154,7 +162,7 @@ async function main() {
       stock: 3,
       description: 'Phiên bản giới hạn Tai Tzu Ying, hỗ trợ di chuyển tối ưu, đệm Shock Absorption.',
       tag: 'New',
-      image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ZzYiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxODE1MTUiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwNDAwNDAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0idXJsKCNnNikiLz48dGV4dCB4PSIyMDAiIHk9IjE2MCIgZm9udC1zaXplPSI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2YzN2IyMiI+8J+TqTwvdGV4dD48dGV4dCB4PSIyMDAiIHk9IjIyMCIgZm9udC1zaXplPSIyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC13ZWlnaHQ9ImJvbGQiPkdJQUhTPC90ZXh0Pjwvc3ZnPg=='
+      image: img('Realistic product photo of Victor P9200 badminton shoes, studio shot, dark background, premium lighting, high detail', 'landscape_4_3'),
     },
     { 
       id: 'shoes-2', 
@@ -164,7 +172,7 @@ async function main() {
       stock: 6,
       description: 'Giày cầu lông cao cấp, hỗ trợ nhanh nhẹ, bám sân tốt.',
       tag: 'Best Seller',
-      image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ZzciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxYTFhMmEiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwYjBiMGIiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0idXJsKCNnNykiLz48dGV4dCB4PSIyMDAiIHk9IjE2MCIgZm9udC1zaXplPSI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzUxNWJmZiI+8J+TqTwvdGV4dD48dGV4dCB4PSIyMDAiIHk9IjIyMCIgZm9udC1zaXplPSIyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC13ZWlnaHQ9ImJvbGQiPllPTkVYPC90ZXh0Pjwvc3ZnPg=='
+      image: img('Product photo of Yonex SHB 65Z3 badminton shoes, clean studio shot, realistic lighting, dark background', 'landscape_4_3'),
     },
     { 
       id: 'grip-1', 
@@ -173,7 +181,7 @@ async function main() {
       price: 45000, 
       stock: 100,
       description: 'Độ bám tốt, thấm hút mồ hôi hiệu quả, mềm tay.',
-      image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ZzgiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxNzFiMWUiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwNDA1MDciLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0idXJsKCNnOCkiLz48dGV4dCB4PSIyMDAiIHk9IjE2MCIgZm9udC1zaXplPSI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzdkNmRmZiI+8J+TsTwvdGV4dD48dGV4dCB4PSIyMDAiIHk9IjIyMCIgZm9udC1zaXplPSIyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC13ZWlnaHQ9ImJvbGQiPlFVTjQgQ0FOPC90ZXh0Pjwvc3ZnPg=='
+      image: img('Product photo of Yonex AC102EX overgrip rolls, studio shot, dark background, realistic, high detail', 'landscape_4_3'),
     },
     { 
       id: 'string-1', 
@@ -182,26 +190,122 @@ async function main() {
       price: 120000, 
       stock: 40,
       description: 'Dây căng tốt, cảm giác đánh tốt, nảy cao.',
-      image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ZzkiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxNjFiMTciLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwNDAwMDYiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0idXJsKCNnOSkiLz48dGV4dCB4PSIyMDAiIHk9IjE2MCIgZm9udC1zaXplPSI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2VlOWMxMSI+8J+Tuw8vdGV4dD48dGV4dCB4PSIyMDAiIHk9IjIyMCIgZm9udC1zaXplPSIyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZiIgZm9udC13ZWlnaHQ9ImJvbGQiPlNUUklORzwvdGV4dD48L3N2Zz4='
+      image: img('Product photo of Yonex BG66 Ultimax badminton string package, studio shot, high detail, realistic lighting', 'landscape_4_3'),
+    },
+    {
+      id: 'bag-1',
+      name: 'Túi vợt Yonex Pro 6R',
+      category: 'Túi - Balo',
+      price: 1450000,
+      stock: 12,
+      description: 'Túi vợt 2 ngăn rộng rãi, chống thấm nhẹ, phù hợp mang 6 cây vợt và phụ kiện.',
+      tag: 'New',
+      image: img('Realistic product photo of Yonex badminton racket bag, black and green, studio shot, premium lighting', 'landscape_4_3'),
+    },
+    {
+      id: 'bag-2',
+      name: 'Balo Victor Team Backpack',
+      category: 'Túi - Balo',
+      price: 990000,
+      stock: 15,
+      description: 'Balo thể thao ngăn riêng giày, ngăn vợt và ngăn phụ kiện, form đứng hiện đại.',
+      image: img('Product photo of a modern badminton backpack, studio shot, dark background, realistic, high detail', 'landscape_4_3'),
+    },
+    {
+      id: 'shirt-1',
+      name: 'Áo thi đấu Elyra Dry-Fit',
+      category: 'Trang Phục',
+      price: 289000,
+      stock: 80,
+      description: 'Áo thể thao co giãn nhẹ, thoáng khí, thấm hút nhanh, phù hợp chơi cầu lông cường độ cao.',
+      tag: 'Best Seller',
+      image: img('Realistic product photo of a premium black badminton jersey on hanger, studio shot, soft lighting', 'landscape_4_3'),
+    },
+    {
+      id: 'shorts-1',
+      name: 'Quần short Elyra Flex',
+      category: 'Trang Phục',
+      price: 259000,
+      stock: 90,
+      description: 'Quần short thể thao co giãn 4 chiều, có túi khóa, tối ưu di chuyển và bật nhảy.',
+      image: img('Product photo of black athletic shorts, studio shot, realistic fabric texture, dark background', 'landscape_4_3'),
+    },
+    {
+      id: 'socks-1',
+      name: 'Vớ Yonex Cushion Crew',
+      category: 'Trang Phục',
+      price: 85000,
+      stock: 120,
+      description: 'Vớ dày đệm êm, giảm chấn, chống trượt, phù hợp chơi indoor.',
+      image: img('Product photo of cushioned sports socks, studio shot, realistic, high detail', 'landscape_4_3'),
+    },
+    {
+      id: 'brace-1',
+      name: 'Bó gối thể thao LP Support',
+      category: 'Bảo Hộ',
+      price: 199000,
+      stock: 40,
+      description: 'Hỗ trợ khớp gối khi di chuyển nhanh, giảm nguy cơ chấn thương khi tập luyện.',
+      tag: 'Hot',
+      image: img('Realistic product photo of a sports knee support brace, studio shot, dark background, high detail', 'landscape_4_3'),
+    },
+    {
+      id: 'brace-2',
+      name: 'Bó cổ tay Aolikes',
+      category: 'Bảo Hộ',
+      price: 99000,
+      stock: 70,
+      description: 'Bảo vệ cổ tay, tăng ổn định khi đập và phòng thủ, chất liệu thấm hút tốt.',
+      image: img('Product photo of wrist support bands, studio shot, realistic lighting, dark background', 'landscape_4_3'),
+    },
+    {
+      id: 'accessory-1',
+      name: 'Bình nước thể thao Elyra 800ml',
+      category: 'Phụ Kiện',
+      price: 159000,
+      stock: 60,
+      description: 'Bình nước nhựa Tritan an toàn, nắp chống rò, tiện mang theo khi luyện tập.',
+      image: img('Product photo of a sleek sports water bottle, studio shot, dark background, premium lighting', 'landscape_4_3'),
+    },
+    {
+      id: 'grip-2',
+      name: 'Quấn cán Li-Ning GP1000',
+      category: 'Phụ Kiện',
+      price: 55000,
+      stock: 120,
+      description: 'Bề mặt bám tốt, giảm trơn khi ra mồ hôi, độ dày vừa phải dễ kiểm soát.',
+      image: img('Product photo of badminton overgrip rolls, studio shot, high detail, dark background', 'landscape_4_3'),
+    },
+    {
+      id: 'string-2',
+      name: 'Dây căng Li-Ning No.1 Boost',
+      category: 'Phụ Kiện',
+      price: 135000,
+      stock: 55,
+      description: 'Dây trợ lực tốt, cảm giác nảy và bám cầu cao, phù hợp lối đánh tốc độ.',
+      tag: 'New',
+      image: img('Product photo of badminton string package, studio shot, realistic, premium lighting', 'landscape_4_3'),
     },
   ];
 
   for (const p of productsData) {
     await prisma.product.upsert({
       where: { id: p.id },
-      update: {},
+      update: p,
       create: p,
     });
   }
 
   // Create initial knowledge posts
+  await prisma.knowledge.deleteMany();
+
   const knowledgeData = [
     {
       id: 'knowledge-1',
       slug: 'bi-quyet-chon-vot',
       title: 'Bí quyết chọn vợt',
       desc: 'Phân tích lực tay, lối đánh và trọng lượng lý tưởng để chọn đúng vợt ngay từ đầu.',
-      img: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxZTFlMmUiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwYTBhMGEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0idXJsKCNnKSIvPjx0ZXh0IHg9IjIwMCIgeT0iMTYwIiBmb250LXNpemU9IjgwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMzliNTZmIj7wn5S/PC90ZXh0Pjx0ZXh0IHg9IjIwMCIgeT0iMjIwIiBmb250LXNpemU9IjIwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjZmZmIiBmb250LXdlaWdodD0iYm9sZCI+Vl9UX0M8L3RleHQ+PC9zdmc+',
+      img: img('A badminton player choosing a racket in a modern pro shop, cinematic lighting, realistic photo, shallow depth of field', 'landscape_4_3'),
       readTime: '6 phút',
       level: 'NEWBIE',
       sections: JSON.stringify([
@@ -215,7 +319,7 @@ async function main() {
       slug: 'phan-loai-cau-tieu-chuan',
       title: 'Phân loại cầu tiêu chuẩn',
       desc: 'Độ bền, tốc độ và sự khác biệt giữa các loại cầu lông phổ biến.',
-      img: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9Imc0IiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMTAxYjE3Ii8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDQwNzA1Ii8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9InVybCgjZzQpIi8+PHRleHQgeD0iMjAwIiB5PSIxNjAiIGZvbnQtc2l6ZT0iODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM3YmQxNGIiP/Cfk7M8L3RleHQ+PHRleHQgeD0iMjAwIiB5PSIyMjAiIGZvbnQtc2l6ZT0iMjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmYiIGZvbnQtd2VpZ2h0PSJib2xkIj5DQUlMQU5HTzwvdGV4dD48L3N2Zz4=',
+      img: img('Close-up photo of badminton shuttlecocks on a wooden court with soft stadium lighting, realistic, high detail', 'landscape_4_3'),
       readTime: '5 phút',
       level: 'NEWBIE',
       sections: JSON.stringify([
@@ -229,7 +333,7 @@ async function main() {
       slug: 'ky-thuat-khoi-dong',
       title: 'Kỹ thuật khởi động',
       desc: 'Tránh chấn thương và tối ưu hiệu suất bằng quy trình khởi động đúng.',
-      img: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9Imc2IiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMTgxNTE1Ii8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDQwMDQwIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9InVybCgjZzYpIi8+PHRleHQgeD0iMjAwIiB5PSIxNjAiIGZvbnQtc2l6ZT0iODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmNzE3MzYiP/Cfk788L3RleHQ+PHRleHQgeD0iMjAwIiB5PSIyMjAiIGZvbnQtc2l6ZT0iMjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmYiIGZvbnQtd2VpZ2h0PSJib2xkIj5HQUlIUzwvdGV4dD48L3N2Zz4=',
+      img: img('Athlete doing dynamic warm-up on indoor badminton court, realistic sports photo, motion blur, cinematic lighting', 'landscape_4_3'),
       readTime: '7 phút',
       level: 'INTERMEDIATE',
       sections: JSON.stringify([
@@ -243,7 +347,7 @@ async function main() {
       slug: 'chien-thuat-danh-doi',
       title: 'Chiến thuật đánh đôi',
       desc: 'Cách di chuyển và phối hợp nhịp nhàng với đồng đội để kiểm soát thế trận.',
-      img: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9Imc5IiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMTYxYjE3Ii8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDQwNDA2Ii8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9InVybCgjZzkpIi8+PHRleHQgeD0iMjAwIiB5PSIxNjAiIGZvbnQtc2l6ZT0iODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNlZTljMTEiP/Cfk788L3RleHQ+PHRleHQgeD0iMjAwIiB5PSIyMjAiIGZvbnQtc2l6ZT0iMjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmYiIGZvbnQtd2VpZ2h0PSJib2xkIj5TVFJJTkc8L3RleHQ+PC9zdmc+',
+      img: img('Two badminton doubles players coordinating on court, indoor stadium, realistic sports photo, dramatic lighting', 'landscape_4_3'),
       readTime: '8 phút',
       level: 'ADVANCED',
       sections: JSON.stringify([
@@ -251,6 +355,62 @@ async function main() {
         { heading: 'Đội hình trái–phải', body: 'Khi phòng thủ, trái–phải giúp phủ sân tốt. Ưu tiên trả cầu sâu và cao để lấy lại nhịp rồi chuyển sang phản công.' },
         { heading: 'Giao tiếp & phân chia khu vực', body: 'Thống nhất người bắt cầu giữa, ưu tiên kêu gọi rõ ràng. Một quyết định nhanh thường tốt hơn hai người do dự.' }
       ])
+    },
+    {
+      id: 'knowledge-5',
+      slug: 'footwork-co-ban',
+      title: 'Footwork cơ bản: đi bước nào cho đúng',
+      desc: 'Cách split-step, bước chéo và lùi sau để đón cầu nhanh hơn mà không tốn sức.',
+      img: img('Badminton footwork training drill on indoor court, cones and athlete movement, realistic photo, high detail', 'landscape_4_3'),
+      readTime: '7 phút',
+      level: 'NEWBIE',
+      sections: JSON.stringify([
+        { heading: 'Split-step là nền tảng', body: 'Tập thói quen bật nhẹ (split-step) đúng thời điểm đối thủ chạm cầu để tăng phản xạ, chuyển hướng nhanh.' },
+        { heading: 'Bước chéo & bước đệm', body: 'Đi bước chéo khi cần chuyển hướng xa, sau đó dùng bước đệm để chỉnh vị trí. Tránh chạy thẳng bằng nhiều bước nhỏ gây mất sức.' },
+        { heading: 'Tập theo góc sân', body: 'Chia sân thành 6 điểm (4 góc + 2 biên giữa) và tập shadow 3–5 set, mỗi set 60–90s, nghỉ 30–45s.' },
+      ]),
+    },
+    {
+      id: 'knowledge-6',
+      slug: 'cang-day-bao-nhieu-la-vua',
+      title: 'Căng dây bao nhiêu là vừa?',
+      desc: 'Chọn mức căng theo trình độ, thể lực và lối đánh để tránh đau tay và đứt dây sớm.',
+      img: img('Close-up of badminton racket string bed and stringing machine, realistic workshop photo, high detail', 'landscape_4_3'),
+      readTime: '6 phút',
+      level: 'INTERMEDIATE',
+      sections: JSON.stringify([
+        { heading: 'Người mới: ưu tiên dễ kiểm soát', body: 'Mức căng thấp–trung bình giúp ít rung, dễ đánh bền. Tăng dần theo thời gian thay vì lên cao ngay.' },
+        { heading: 'Trình độ khá: tối ưu cảm giác', body: 'Nếu bạn đã có kỹ thuật và lực cổ tay, căng cao hơn giúp điều cầu sắc và phản hồi nhanh.' },
+        { heading: 'Dây mỏng vs dây dày', body: 'Dây mỏng cho cảm giác và tiếng nổ tốt nhưng dễ đứt. Dây dày bền hơn, phù hợp đánh phong trào.' },
+      ]),
+    },
+    {
+      id: 'knowledge-7',
+      slug: 'dinh-duong-truoc-tran-dau',
+      title: 'Dinh dưỡng trước trận: ăn gì để không hụt hơi',
+      desc: 'Gợi ý bữa ăn nhẹ, nước điện giải và thời điểm nạp năng lượng trước khi vào sân.',
+      img: img('Healthy sports nutrition meal and electrolyte drink on table, realistic photo, clean lighting, high detail', 'landscape_4_3'),
+      readTime: '5 phút',
+      level: 'NEWBIE',
+      sections: JSON.stringify([
+        { heading: 'Trước 60–120 phút', body: 'Ưu tiên carb dễ tiêu (chuối, bánh mì, yến mạch) và đủ nước. Tránh đồ nhiều dầu mỡ.' },
+        { heading: 'Trong khi chơi', body: 'Uống từng ngụm nhỏ đều đặn. Nếu đánh lâu, dùng nước điện giải hoặc snack nhỏ.' },
+        { heading: 'Sau trận', body: 'Bổ sung nước và protein vừa đủ giúp phục hồi cơ tốt hơn, giảm đau mỏi.' },
+      ]),
+    },
+    {
+      id: 'knowledge-8',
+      slug: 'chan-thuong-thuong-gap',
+      title: 'Chấn thương thường gặp & cách phòng tránh',
+      desc: 'Cổ chân, gối, vai và khuỷu tay: nhận biết sớm và phòng tránh đúng cách.',
+      img: img('Sports injury prevention concept on badminton court, ankle tape, knee brace, realistic photo, high detail', 'landscape_4_3'),
+      readTime: '8 phút',
+      level: 'ADVANCED',
+      sections: JSON.stringify([
+        { heading: 'Cổ chân & gối', body: 'Tập ổn định cổ chân (balance), tăng sức mạnh đùi và mông giúp giảm xoắn gối khi đổi hướng.' },
+        { heading: 'Vai & khuỷu tay', body: 'Khởi động kỹ khớp vai, tăng cơ rotator cuff, tránh đập quá sức khi cơ thể chưa sẵn sàng.' },
+        { heading: 'Giày & mặt sân', body: 'Chọn giày indoor bám tốt và đúng size. Mặt sân trơn làm tăng nguy cơ trượt và lật cổ chân.' },
+      ]),
     },
   ];
 

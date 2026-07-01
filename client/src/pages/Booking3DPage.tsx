@@ -140,7 +140,7 @@ export function Booking3DPage() {
   const transferAccount = '0931440055'
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-[#020617]">
+    <div className="relative isolate w-full h-screen overflow-hidden bg-[#020617]">
       {webglError && (
         <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/90 p-8 text-center">
           <div className="max-w-md space-y-6">
@@ -153,7 +153,7 @@ export function Booking3DPage() {
       )}
       <Scene />
 
-      <div className="absolute top-4 md:top-6 left-4 md:left-6 right-4 md:right-6 z-[260] pointer-events-auto">
+      <div className="absolute top-4 md:top-6 left-4 md:left-6 right-4 md:right-6 z-[450] pointer-events-auto">
         <div className="flex flex-col md:grid md:grid-cols-3 items-center gap-3 md:gap-4">
           <div className="flex w-full md:w-auto justify-between md:justify-start items-center gap-3">
             <Link
@@ -402,7 +402,7 @@ export function Booking3DPage() {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 40 }}
-            className="absolute md:sticky bottom-0 md:top-24 md:bottom-auto left-0 md:left-auto md:ml-auto right-0 md:mr-8 w-full md:w-[400px] max-w-full md:max-w-[calc(100vw-64px)] max-h-[80vh] md:max-h-none z-[260] pointer-events-auto overflow-y-auto custom-scrollbar rounded-t-3xl md:rounded-3xl"
+            className="absolute md:sticky bottom-0 md:top-24 md:bottom-auto left-0 md:left-auto md:ml-auto right-0 md:mr-8 w-full md:w-[400px] max-w-full md:max-w-[calc(100vw-64px)] max-h-[80vh] md:max-h-none z-[420] pointer-events-auto overflow-y-auto custom-scrollbar rounded-t-3xl md:rounded-3xl"
           >
             <div className="glass p-6 md:p-8 border-white/5 shadow-2xl flex flex-col min-h-full">
               <div className="flex items-start justify-between gap-4 mb-6 md:mb-8">

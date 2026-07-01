@@ -17,7 +17,7 @@ RectAreaLightUniformsLib.init();
 const Loader = () => {
   const { progress } = useProgress()
   return (
-    <Html center>
+    <Html center style={{ zIndex: 2000, pointerEvents: 'none' }} zIndexRange={[2000, 0]}>
       <div className="flex flex-col items-center justify-center space-y-4">
         <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden">
           <div 
