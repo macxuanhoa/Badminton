@@ -235,9 +235,9 @@ async function main() {
       readTime: '7 phút',
       level: 'INTERMEDIATE',
       sections: JSON.stringify([
-        { title: 'Kích hoạt toàn thân', content: 'Ưu tiên khớp cổ chân, gối, hông và vai. Thực hiện 5–8 phút bài động (dynamic) thay vì giãn tĩnh lâu ngay đầu buổi.' },
-        { title: 'Bài chuyên môn cầu lông', content: 'Shadow footwork (di chuyển không cầu), bước chéo, split step và các bài bật nhảy nhẹ giúp cơ thể vào nhịp trước khi vào game.' },
-        { title: 'Tăng dần cường độ', content: 'Đánh cầu nhẹ 2–3 phút, rồi tăng tốc/độ mạnh từ từ. Mục tiêu là tăng nhịp tim và nhiệt cơ, không phải "đốt sức" ngay.' }
+        { heading: 'Kích hoạt toàn thân', body: 'Ưu tiên khớp cổ chân, gối, hông và vai. Thực hiện 5–8 phút bài động (dynamic) thay vì giãn tĩnh lâu ngay đầu buổi.' },
+        { heading: 'Bài chuyên môn cầu lông', body: 'Shadow footwork (di chuyển không cầu), bước chéo, split step và các bài bật nhảy nhẹ giúp cơ thể vào nhịp trước khi vào game.' },
+        { heading: 'Tăng dần cường độ', body: 'Đánh cầu nhẹ 2–3 phút, rồi tăng tốc/độ mạnh từ từ. Mục tiêu là tăng nhịp tim và nhiệt cơ, không phải "đốt sức" ngay.' }
       ])
     },
     {
@@ -259,7 +259,7 @@ async function main() {
   for (const k of knowledgeData) {
     await prisma.knowledge.upsert({
       where: { id: k.id },
-      update: {},
+      update: k,
       create: k,
     });
   }
