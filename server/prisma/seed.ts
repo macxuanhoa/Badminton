@@ -71,29 +71,27 @@ async function main() {
 
   // Create some slots
   const slotsData = [
-    { id: 'slot-1', time: '05:00 - 06:00', price: 100000 },
-    { id: 'slot-2', time: '06:00 - 07:00', price: 120000 },
-    { id: 'slot-3', time: '07:00 - 08:00', price: 120000 },
-    { id: 'slot-4', time: '08:00 - 09:00', price: 120000 },
-    { id: 'slot-5', time: '09:00 - 10:00', price: 120000 },
-    { id: 'slot-6', time: '10:00 - 11:00', price: 120000 },
-    { id: 'slot-7', time: '11:00 - 12:00', price: 120000 },
-    { id: 'slot-8', time: '12:00 - 13:00', price: 120000 },
-    { id: 'slot-9', time: '13:00 - 14:00', price: 120000 },
-    { id: 'slot-10', time: '14:00 - 15:00', price: 120000 },
-    { id: 'slot-11', time: '15:00 - 16:00', price: 150000 },
-    { id: 'slot-12', time: '16:00 - 17:00', price: 150000 },
-    { id: 'slot-13', time: '17:00 - 18:00', price: 180000 },
-    { id: 'slot-14', time: '18:00 - 19:00', price: 220000 },
-    { id: 'slot-15', time: '19:00 - 20:00', price: 220000 },
-    { id: 'slot-16', time: '20:00 - 21:00', price: 180000 },
-    { id: 'slot-17', time: '21:00 - 22:00', price: 150000 },
+    { id: 'slot-1', time: '07:00 - 08:00', price: 120000 },
+    { id: 'slot-2', time: '08:00 - 09:00', price: 120000 },
+    { id: 'slot-3', time: '09:00 - 10:00', price: 120000 },
+    { id: 'slot-4', time: '10:00 - 11:00', price: 120000 },
+    { id: 'slot-5', time: '11:00 - 12:00', price: 120000 },
+    { id: 'slot-6', time: '12:00 - 13:00', price: 120000 },
+    { id: 'slot-7', time: '13:00 - 14:00', price: 120000 },
+    { id: 'slot-8', time: '14:00 - 15:00', price: 120000 },
+    { id: 'slot-9', time: '15:00 - 16:00', price: 150000 },
+    { id: 'slot-10', time: '16:00 - 17:00', price: 150000 },
+    { id: 'slot-11', time: '17:00 - 18:00', price: 180000 },
+    { id: 'slot-12', time: '18:00 - 19:00', price: 220000 },
+    { id: 'slot-13', time: '19:00 - 20:00', price: 220000 },
+    { id: 'slot-14', time: '20:00 - 21:00', price: 180000 },
+    { id: 'slot-15', time: '21:00 - 22:00', price: 150000 },
   ];
 
   for (const s of slotsData) {
     await prisma.slot.upsert({
       where: { id: s.id },
-      update: {},
+      update: s,
       create: s,
     });
   }

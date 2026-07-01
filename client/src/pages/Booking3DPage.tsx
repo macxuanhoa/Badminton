@@ -56,6 +56,9 @@ export function Booking3DPage() {
   const [card, setCard] = useState({ number: '', name: '', expiry: '', cvc: '' })
   const [payErrors, setPayErrors] = useState<{ transfer?: string; cardNumber?: string; cardName?: string; cardExpiry?: string; cardCvc?: string }>({})
   const [paymentOpen, setPaymentOpen] = useState(false)
+  const [customStartTime, setCustomStartTime] = useState('')
+  const [customEndTime, setCustomEndTime] = useState('')
+  const allSlots = useStore((s) => s.slots)
   const theme = useStore((s) => s.theme)
   const toggleTheme = useStore((s) => s.toggleTheme)
   const logout = useStore((s) => s.logout)
@@ -433,6 +436,56 @@ export function Booking3DPage() {
                     <div className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Khung Giờ</div>
                     <div className="text-primary font-bold mt-1 text-sm">{selectedSlot?.time || '--:--'}</div>
                   </div>
+                </div>
+
+                {/* Custom Time Input */}
+                <div className="space-y-3 pt-3 border-t border-white/5">
+                  <div className="flex items-center justify-between">
+                    <div className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Thời gian tùy chỉnh</div>
+                    <div className="flex gap-2 text-[8px] font-bold text-primary/80 uppercase tracking-widest">
+                      <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500"></span>Available</div>
+                      <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span>Booked</div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold uppercase tracking-widest text-gray-500">Giờ bắt đầu</label>
+                      <input
+                        type="time"
+                        value={customStartTime}
+                        onChange={(e) => setCustomStartTime(e.target.value)}
+                        className="custom-date-input bg-black/40 border border-white/10 text-white rounded-xl px-3 py-2 text-[10px] font-bold focus:outline-none focus:border-primary/50"
+                        style={{ colorScheme: 'dark' }}
+                        min="07:00"
+                        max="22:00"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold uppercase tracking-widest text-gray-500">Giờ kết thúc</label>
+                      <input
+                        type="time"
+                        value={customEndTime}
+                        onChange={(e) => setCustomEndTime(e.target.value)}
+                        className="custom-date-input bg-black/40 border border-white/10 text-white rounded-xl px-3 py-2 text-[10px] font-bold focus:outline-none focus:border-primary/50"
+                        style={{ colorScheme: 'dark' }}
+                        min="07:00"
+                        max="23:00"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (customStartTime && customEndTime && customStartTime < customEndTime) {
+                        const timeStr = `${customStartTime} - ${customEndTime}`;
+                        setSelectedSlot({ id: 'custom', time: timeStr, price: allSlots[0]?.price || selectedCourt.price });
+                        setStep('CONFIRM');
+                      }
+                    }}
+                    disabled={!customStartTime || !customEndTime || !(customStartTime < customEndTime)}
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:bg-white/10 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Áp dụng thời gian tùy chỉnh
+                  </button>
                 </div>
 
                 <div className="space-y-4">
