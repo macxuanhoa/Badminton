@@ -164,7 +164,7 @@ export const Timeline3D: React.FC = () => {
   const bookings = useStore((state) => state.bookings);
   const selectedDate = useStore((state) => state.selectedDate);
   const setStep = useStore((state) => state.setStep);
-  const selectedSlotId = useStore((state) => state.selectedSlot?.id);
+  const selectedSlotId = useStore((state) => state.selectedSlot?.id ?? null);
   const setSelectedSlot = useStore((state) => state.setSelectedSlot);
   const user = useStore((state) => state.user);
   const tempUserId = useStore((state) => state.tempUserId);
